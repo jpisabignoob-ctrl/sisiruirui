@@ -108,6 +108,13 @@
     background:var(--pink-light);color:var(--ink);font-size:11.5px;font-weight:600;
     padding:6px 12px;border-radius:999px;z-index:60;box-shadow:0 4px 10px rgba(0,0,0,0.08);
   }
+  .exit-btn{
+    position:fixed;top:12px;left:14px;z-index:60;
+    background:var(--white);border:1px solid var(--border);color:var(--gray);
+    font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:999px;
+    cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,0.06);
+  }
+  .exit-btn:hover{color:var(--pink-dark);border-color:var(--pink);}
 
   main{flex:1;min-height:0;}
   .panel{display:none;height:100%;}
@@ -425,6 +432,7 @@
   <!-- APP -->
   <div id="app" style="display:none;">
     <div class="presence-pill" id="presencePill">🟢 Someone else is here too</div>
+    <button class="exit-btn" id="exitBtn" title="Switch person">🚪 Switch</button>
     <nav class="tabs" id="tabs">
       <button data-tab="board" class="active">Board</button>
       <button data-tab="notes">Notes</button>
@@ -519,7 +527,7 @@
             <div class="write-note-box">
               <p class="write-label">Write one for <span id="otherNameLabel">them</span></p>
               <textarea id="noteInput" placeholder="Write something true..." maxlength="400"></textarea>
-              <button class="primary-btn" id="addNoteBtn">Add to jar</button>
+              <button class="primary-btn" id="addNoteBtn" disabled>Add to jar</button>
               <p class="note-added-confirm" id="addNoteConfirm" style="display:none;">Added 💌</p>
             </div>
           </div>
@@ -707,6 +715,11 @@ function enterAppAsCharacter(char){
   initApp();
 }
 
+document.getElementById('exitBtn').addEventListener('click', ()=>{
+  localStorage.removeItem('character');
+  location.reload();
+});
+
 // ---------- Tabs ----------
 function setupTabs(){
   const tabs = document.querySelectorAll('#tabs button');
@@ -744,6 +757,9 @@ function setupJar(){
 
   document.getElementById('drawBtn').addEventListener('click', drawNote);
   document.getElementById('addNoteBtn').addEventListener('click', addNote);
+  document.getElementById('noteInput').addEventListener('input', (e)=>{
+    document.getElementById('addNoteBtn').disabled = e.target.value.trim().length===0;
+  });
 
   const subBtns = document.querySelectorAll('#notesSubtabs button');
   subBtns.forEach(btn=>{
@@ -785,6 +801,7 @@ async function addNote(){
   try{
     await db.collection('notes').add({ text, author: myCharacter, read:false, favorite:false, createdAt: Date.now() });
     input.value = '';
+    document.getElementById('addNoteBtn').disabled = true;
     const confirm = document.getElementById('addNoteConfirm');
     confirm.style.display = 'block';
     setTimeout(()=>{ confirm.style.display = 'none'; }, 2000);
