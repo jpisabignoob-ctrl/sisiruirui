@@ -347,6 +347,26 @@
   .note-row-text{flex:1;font-size:14.5px;line-height:1.5;color:var(--ink);white-space:pre-wrap;word-break:break-word;}
   .note-fav-btn{background:none;border:none;font-size:16px;cursor:pointer;flex:0 0 auto;}
   .empty-note{color:var(--gray);font-size:14px;text-align:center;margin-top:20px;}
+
+  .menu-wrap{
+    flex:1;overflow-y:auto;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;padding:40px 24px;text-align:center;
+  }
+  .menu-heart{font-size:30px;margin-bottom:4px;}
+  .menu-eyebrow{font-size:12.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gray);margin:0 0 20px;}
+  .timer-grid{display:flex;gap:12px;}
+  .timer-box{
+    background:var(--pink-light);border-radius:16px;padding:16px 14px;min-width:64px;
+    box-shadow:0 6px 16px rgba(242,166,192,0.18);
+  }
+  .timer-num{font-family:'Quicksand',sans-serif;font-weight:700;font-size:30px;color:var(--pink-dark);line-height:1;}
+  .timer-label{font-size:10.5px;color:var(--gray);text-transform:uppercase;letter-spacing:0.07em;margin-top:6px;}
+  .timer-box.seconds .timer-num{animation:pulse-beat 1s ease-in-out infinite;}
+  @keyframes pulse-beat{0%,100%{transform:scale(1);}50%{transform:scale(1.1);}}
+  .menu-since{margin-top:24px;font-size:12.5px;color:var(--gray);}
+  @media (prefers-reduced-motion: reduce){
+    .timer-box.seconds .timer-num{animation:none;}
+  }
   .jar-wrap p.intro{color:var(--gray);max-width:380px;margin:0 auto 22px;font-size:14.5px;line-height:1.6;}
   .jar-svg{width:110px;height:130px;margin:0 auto 16px;display:block;}
   .note-card{
@@ -436,6 +456,7 @@
     <nav class="tabs" id="tabs">
       <button data-tab="board" class="active">Board</button>
       <button data-tab="notes">Notes</button>
+      <button data-tab="menu">Menu</button>
     </nav>
     <main>
       <section id="tab-board" class="panel active">
@@ -539,6 +560,32 @@
           <div class="notes-list" id="favList"></div>
         </div>
       </section>
+
+      <section id="tab-menu" class="panel">
+        <div class="menu-wrap">
+          <div class="menu-heart">💗</div>
+          <p class="menu-eyebrow">together for</p>
+          <div class="timer-grid">
+            <div class="timer-box">
+              <div class="timer-num" id="timerDays">0</div>
+              <div class="timer-label">days</div>
+            </div>
+            <div class="timer-box">
+              <div class="timer-num" id="timerHours">00</div>
+              <div class="timer-label">hours</div>
+            </div>
+            <div class="timer-box">
+              <div class="timer-num" id="timerMinutes">00</div>
+              <div class="timer-label">minutes</div>
+            </div>
+            <div class="timer-box seconds">
+              <div class="timer-num" id="timerSeconds">00</div>
+              <div class="timer-label">seconds</div>
+            </div>
+          </div>
+          <p class="menu-since">since August 3rd, 11:32 PM</p>
+        </div>
+      </section>
     </main>
   </div>
 
@@ -585,7 +632,8 @@ const db = firebase.firestore();
    ============================================================ */
 const CONFIG = {
   password: "ourplace", // set your own shared password
-  anniversary: { day: 3, month: 8 } // August 3rd — already set
+  anniversary: { day: 3, month: 8 }, // August 3rd — already set
+  startedDating: { year: 2026, month: 8, day: 3, hour: 23, minute: 32 } // ✏️ EDIT: set the correct year — day/time already set to Aug 3rd, 11:32 PM
 };
 const WIPE_PHRASE = "wipe the board";
 const SECURITY_ANSWER_KEYWORDS = ["travis", "fish"]; // answer must contain all of these words (case-insensitive)
@@ -790,7 +838,11 @@ async function drawNote(){
   const note = pool[Math.floor(Math.random()*pool.length)];
   noteCard.innerHTML = `<div class="note-text">${escapeHtml(note.text)}</div><button class="note-fav-btn" title="Favorite">${note.favorite ? '❤️' : '🤍'}</button>`;
   noteCard.classList.remove('show'); void noteCard.offsetWidth; noteCard.classList.add('show');
-  noteCard.querySelector('.note-fav-btn').addEventListener('click', ()=> toggleFavorite(note.id));
+  const drawnFavBtn = noteCard.querySelector('.note-fav-btn');
+  drawnFavBtn.addEventListener('click', ()=>{
+    const nowFav = toggleFavorite(note.id);
+    drawnFavBtn.textContent = nowFav ? '❤️' : '🤍';
+  });
   try{ await db.collection('notes').doc(note.id).set({ read:true, readAt: Date.now() }, { merge:true }); } catch(e){}
 }
 
@@ -808,10 +860,12 @@ async function addNote(){
   } catch(e){}
 }
 
-async function toggleFavorite(id){
+function toggleFavorite(id){
   const note = notes.find(n=>n.id===id);
-  if(!note) return;
-  try{ await db.collection('notes').doc(id).set({ favorite: !note.favorite }, { merge:true }); } catch(e){}
+  if(!note) return null;
+  note.favorite = !note.favorite; // update locally right away so the UI reflects it instantly
+  db.collection('notes').doc(id).set({ favorite: note.favorite }, { merge:true }).catch(()=>{});
+  return note.favorite;
 }
 
 function renderNoteList(elId, list, emptyMessage){
@@ -828,7 +882,10 @@ function renderNoteList(elId, list, emptyMessage){
     </div>
   `).join('');
   wrap.querySelectorAll('.note-fav-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=> toggleFavorite(btn.dataset.id));
+    btn.addEventListener('click', ()=>{
+      const nowFav = toggleFavorite(btn.dataset.id);
+      btn.textContent = nowFav ? '❤️' : '🤍';
+    });
   });
 }
 
@@ -1721,12 +1778,28 @@ function removeOtherCursor(id){
 }
 
 // ---------- Boot ----------
+function updateTogetherTimer(){
+  const s = CONFIG.startedDating;
+  const start = new Date(s.year, s.month-1, s.day, s.hour, s.minute, 0);
+  let diff = Math.max(0, Date.now() - start.getTime());
+  const days = Math.floor(diff / 86400000); diff -= days*86400000;
+  const hours = Math.floor(diff / 3600000); diff -= hours*3600000;
+  const minutes = Math.floor(diff / 60000); diff -= minutes*60000;
+  const seconds = Math.floor(diff / 1000);
+  document.getElementById('timerDays').textContent = days;
+  document.getElementById('timerHours').textContent = String(hours).padStart(2,'0');
+  document.getElementById('timerMinutes').textContent = String(minutes).padStart(2,'0');
+  document.getElementById('timerSeconds').textContent = String(seconds).padStart(2,'0');
+}
+
 function initApp(){
   setupTabs();
   setupJar();
   initBoard();
   setupPresence();
   setupLiveCursors();
+  updateTogetherTimer();
+  setInterval(updateTogetherTimer, 1000);
 }
 
 if(localStorage.getItem('boardUnlocked') === 'true'){
