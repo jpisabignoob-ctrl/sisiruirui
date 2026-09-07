@@ -350,7 +350,8 @@
     border-radius:14px;padding:14px 16px;margin-bottom:10px;
   }
   .note-row-text{flex:1;font-size:14.5px;line-height:1.5;color:var(--ink);white-space:pre-wrap;word-break:break-word;}
-  .note-fav-btn{background:none;border:none;font-size:16px;cursor:pointer;flex:0 0 auto;}
+  .note-row-actions{display:flex;gap:6px;flex:0 0 auto;}
+  .note-fav-btn, .note-del-btn{background:none;border:none;font-size:16px;cursor:pointer;flex:0 0 auto;}
   .empty-note{color:var(--gray);font-size:14px;text-align:center;margin-top:20px;}
 
   .menu-wrap{
@@ -399,7 +400,8 @@
     display:none;position:relative;text-align:left;
   }
   .note-card.show{display:block;animation:pop .35s ease;}
-  .note-card .note-fav-btn{position:absolute;top:10px;right:10px;background:none;border:none;font-size:17px;cursor:pointer;}
+  .note-card .note-card-actions{position:absolute;top:8px;right:8px;display:flex;gap:6px;}
+  .note-card .note-fav-btn, .note-card .note-del-btn{background:none;border:none;font-size:16px;cursor:pointer;}
   @keyframes pop{from{opacity:0;transform:scale(.94);}to{opacity:1;transform:scale(1);}}
   .jar-count{font-size:12px;color:var(--gray);margin-top:14px;}
 
@@ -887,12 +889,17 @@ async function drawNote(){
     return;
   }
   const note = pool[Math.floor(Math.random()*pool.length)];
-  noteCard.innerHTML = `<div class="note-text">${escapeHtml(note.text)}</div><button class="note-fav-btn" title="Favorite">${note.favorite ? '❤️' : '🤍'}</button>`;
+  noteCard.innerHTML = `<div class="note-text">${escapeHtml(note.text)}</div><div class="note-card-actions"><button class="note-fav-btn" title="Favorite">${note.favorite ? '❤️' : '🤍'}</button><button class="note-del-btn" title="Delete">🗑</button></div>`;
   noteCard.classList.remove('show'); void noteCard.offsetWidth; noteCard.classList.add('show');
   const drawnFavBtn = noteCard.querySelector('.note-fav-btn');
   drawnFavBtn.addEventListener('click', ()=>{
     const nowFav = toggleFavorite(note.id);
     drawnFavBtn.textContent = nowFav ? '❤️' : '🤍';
+  });
+  noteCard.querySelector('.note-del-btn').addEventListener('click', ()=>{
+    deleteNote(note.id);
+    noteCard.classList.remove('show');
+    noteCard.innerHTML = '';
   });
   try{ await db.collection('notes').doc(note.id).set({ read:true, readAt: Date.now() }, { merge:true }); } catch(e){}
 }
@@ -919,6 +926,14 @@ function toggleFavorite(id){
   return note.favorite;
 }
 
+function deleteNote(id){
+  notes = notes.filter(n=>n.id!==id); // remove locally right away
+  db.collection('notes').doc(id).delete().catch(()=>{});
+  renderNoteList('readList', readForMe(), 'Nothing read yet.');
+  renderNoteList('favList', favoritesForMe(), 'No favorites yet.');
+  updateJarCount();
+}
+
 function renderNoteList(elId, list, emptyMessage){
   const wrap = document.getElementById(elId);
   if(!wrap) return;
@@ -929,9 +944,15 @@ function renderNoteList(elId, list, emptyMessage){
   wrap.innerHTML = list.map(n => `
     <div class="note-row">
       <div class="note-row-text">${escapeHtml(n.text)}</div>
-      <button class="note-fav-btn" data-id="${n.id}">${n.favorite ? '❤️' : '🤍'}</button>
+      <div class="note-row-actions">
+        <button class="note-fav-btn" data-id="${n.id}">${n.favorite ? '❤️' : '🤍'}</button>
+        <button class="note-del-btn" data-id="${n.id}" title="Delete">🗑</button>
+      </div>
     </div>
   `).join('');
+  wrap.querySelectorAll('.note-del-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> deleteNote(btn.dataset.id));
+  });
   wrap.querySelectorAll('.note-fav-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const nowFav = toggleFavorite(btn.dataset.id);
@@ -1257,49 +1278,86 @@ function eraseAt(worldPt){
   }
   return changed;
 }
-function densifyPoints(points, maxSpacing){
-  if(points.length < 2) return points.slice();
-  const result = [points[0]];
+function segmentCircleIntersections(A, B, C, r){
+  const d = { x:B.x-A.x, y:B.y-A.y };
+  const f = { x:A.x-C.x, y:A.y-C.y };
+  const a = d.x*d.x + d.y*d.y;
+  if(a === 0) return [];
+  const b = 2*(f.x*d.x + f.y*d.y);
+  const c = f.x*f.x + f.y*f.y - r*r;
+  const disc = b*b - 4*a*c;
+  if(disc < 0) return [];
+  const sqrtDisc = Math.sqrt(disc);
+  const t1 = (-b - sqrtDisc)/(2*a);
+  const t2 = (-b + sqrtDisc)/(2*a);
+  const results = [];
+  if(t1 >= 0 && t1 <= 1) results.push({ t:t1, point:{ x:A.x+t1*d.x, y:A.y+t1*d.y } });
+  if(t2 >= 0 && t2 <= 1) results.push({ t:t2, point:{ x:A.x+t2*d.x, y:A.y+t2*d.y } });
+  results.sort((p,q)=>p.t-q.t);
+  return results;
+}
+function clipStrokeOutsideCircle(points, center, radius){
+  const r2 = radius*radius;
+  const isInside = p => (p.x-center.x)**2 + (p.y-center.y)**2 < r2;
+  if(points.length === 0) return { runs:[], changed:false };
+  if(points.length === 1){
+    return isInside(points[0]) ? { runs:[], changed:true } : { runs:[points], changed:false };
+  }
+  const runs = [];
+  let current = [];
+  let changed = false;
+  const endRun = ()=>{ if(current.length > 1) runs.push(current); current = []; };
+
+  if(isInside(points[0])) changed = true; else current.push(points[0]);
+
   for(let i=1;i<points.length;i++){
-    const a = points[i-1], b = points[i];
-    const segLen = Math.hypot(b.x-a.x, b.y-a.y);
-    const steps = Math.max(1, Math.ceil(segLen/maxSpacing));
-    for(let s=1;s<=steps;s++){
-      const t = s/steps;
-      result.push({ x: a.x + (b.x-a.x)*t, y: a.y + (b.y-a.y)*t });
+    const prev = points[i-1], p = points[i];
+    const prevInside = isInside(prev), inside = isInside(p);
+    if(!prevInside && !inside){
+      const ix = segmentCircleIntersections(prev, p, center, radius);
+      if(ix.length === 2){
+        changed = true;
+        current.push(ix[0].point);
+        endRun();
+        current = [ix[1].point, p];
+      } else {
+        current.push(p);
+      }
+    } else if(prevInside && !inside){
+      changed = true;
+      const ix = segmentCircleIntersections(prev, p, center, radius);
+      const exitPt = ix.length ? ix[ix.length-1].point : p;
+      current = [exitPt, p];
+    } else if(!prevInside && inside){
+      changed = true;
+      const ix = segmentCircleIntersections(prev, p, center, radius);
+      const enterPt = ix.length ? ix[0].point : prev;
+      current.push(enterPt);
+      endRun();
+    } else {
+      changed = true; // both inside — fully within the eraser, dropped
     }
   }
-  return result;
+  endRun();
+  return { runs, changed };
 }
 function eraseAtPrecise(worldPt){
-  const threshold = eraserRadius;
-  const step = Math.max(3, threshold/3); // fine enough sampling that removal actually tracks the circle's real size
   let changed = false;
   const result = [];
   for(const stroke of boardState.strokes){
-    const densePoints = densifyPoints(stroke.points, step);
-    const keep = densePoints.map(p => Math.hypot(p.x-worldPt.x, p.y-worldPt.y) >= threshold);
-    if(keep.every(k=>k)){
+    const { runs, changed: strokeChanged } = clipStrokeOutsideCircle(stroke.points, worldPt, eraserRadius);
+    if(!strokeChanged){
       result.push(stroke);
       continue;
     }
     changed = true;
     const oldEl = svg.querySelector(`path[data-id="${stroke.id}"]`);
     if(oldEl) oldEl.remove();
-    let run = [];
-    const flush = ()=>{
-      if(run.length>1){
-        const piece = { id:'s'+Date.now()+Math.random().toString(36).slice(2), color:stroke.color, width:stroke.width, points:run };
-        result.push(piece);
-        renderStroke(piece);
-      }
-      run = [];
-    };
-    for(let i=0;i<densePoints.length;i++){
-      if(keep[i]) run.push(densePoints[i]);
-      else flush();
-    }
-    flush();
+    runs.forEach(runPoints=>{
+      const piece = { id:'s'+Date.now()+Math.random().toString(36).slice(2)+result.length, color:stroke.color, width:stroke.width, points:runPoints };
+      result.push(piece);
+      renderStroke(piece);
+    });
   }
   if(changed) boardState.strokes = result;
   return changed;
