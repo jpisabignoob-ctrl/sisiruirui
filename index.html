@@ -127,7 +127,7 @@
     touch-action:none;cursor:grab;user-select:none;-webkit-user-drag:none;user-drag:none;
   }
   .board-viewport.panning{cursor:grabbing;}
-  .board-viewport.draw-mode{cursor:crosshair;}
+  .board-viewport.draw-mode{cursor:none;}
   .board-viewport.erase-mode{cursor:none;}
   .board-viewport.draw-mode .photo-item, .board-viewport.erase-mode .photo-item{ pointer-events:none; }
   .board-world{position:absolute;left:0;top:0;transform-origin:0 0;}
@@ -187,6 +187,10 @@
     position:absolute;border:2px solid var(--pink-dark);background:rgba(242,166,192,0.18);
     border-radius:50%;pointer-events:none;display:none;z-index:6;
     transform:translate(0,0);
+  }
+  .pen-cursor{
+    position:absolute;border:2px solid rgba(0,0,0,0.3);
+    border-radius:50%;pointer-events:none;display:none;z-index:6;
   }
 
   .board-loading{
@@ -251,13 +255,14 @@
   }
   .color-popover input[type="color"]{width:26px;height:26px;border:none;padding:0;border-radius:50%;overflow:hidden;cursor:pointer;background:none;}
 
-  .eraser-popover{width:170px;text-align:center;}
-  .eraser-mode-row{display:flex;gap:4px;margin-bottom:10px;}
+  .eraser-popover{width:190px;text-align:center;box-sizing:border-box;}
+  .eraser-mode-row{display:flex;gap:6px;margin-bottom:10px;width:100%;}
   .eraser-mode-btn{
-    flex:1;background:var(--pink-light);border:none;border-radius:8px;
-    padding:6px 4px;font-size:11px;font-weight:600;color:var(--gray);cursor:pointer;
+    flex:1 1 0;min-width:0;background:var(--pink-light);border:1.5px solid transparent;border-radius:8px;
+    padding:7px 4px;font-size:11.5px;font-weight:600;color:var(--gray);cursor:pointer;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
-  .eraser-mode-btn.active{background:var(--pink);color:white;}
+  .eraser-mode-btn.active{background:var(--pink);color:white;border-color:var(--pink-dark);}
   .eraser-popover input[type="range"], .size-row input[type="range"]{width:100%;accent-color:var(--pink);}
   .eraser-popover .size-label, .size-row .size-label{font-size:12px;color:var(--gray);margin-top:4px;display:block;}
   .size-row{border-top:1px solid var(--border);padding-top:10px;margin-top:10px;text-align:center;}
@@ -364,6 +369,25 @@
   .timer-box.seconds .timer-num{animation:pulse-beat 1s ease-in-out infinite;}
   @keyframes pulse-beat{0%,100%{transform:scale(1);}50%{transform:scale(1.1);}}
   .menu-since{margin-top:24px;font-size:12.5px;color:var(--gray);}
+  .mood-section{margin-top:36px;padding-top:26px;border-top:1px solid var(--border);width:100%;max-width:320px;}
+  .mood-label{font-size:12.5px;color:var(--gray);margin:0 0 12px;}
+  .mood-picker{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:20px;}
+  .mood-emoji-btn{
+    width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border);
+    background:var(--white);font-size:17px;cursor:pointer;display:flex;
+    align-items:center;justify-content:center;
+  }
+  .mood-emoji-btn:hover{border-color:var(--pink);}
+  .mood-emoji-btn.active{background:var(--pink-light);border-color:var(--pink);}
+  .mood-display{display:flex;justify-content:center;gap:32px;}
+  .mood-you, .mood-them{display:flex;flex-direction:column;align-items:center;gap:4px;}
+  .mood-display-emoji{font-size:26px;}
+  .mood-display-label{font-size:10.5px;color:var(--gray);text-transform:uppercase;letter-spacing:0.06em;}
+  .backup-btn{
+    margin-top:30px;background:none;border:1px solid var(--border);color:var(--gray);
+    font-size:12.5px;font-weight:600;padding:9px 18px;border-radius:999px;cursor:pointer;
+  }
+  .backup-btn:hover{border-color:var(--pink);color:var(--pink-dark);}
   @media (prefers-reduced-motion: reduce){
     .timer-box.seconds .timer-num{animation:none;}
   }
@@ -454,12 +478,12 @@
     <div class="presence-pill" id="presencePill">🟢 Someone else is here too</div>
     <button class="exit-btn" id="exitBtn" title="Switch person">🚪 Switch</button>
     <nav class="tabs" id="tabs">
-      <button data-tab="board" class="active">Board</button>
+      <button data-tab="menu" class="active">Menu</button>
+      <button data-tab="board">Board</button>
       <button data-tab="notes">Notes</button>
-      <button data-tab="menu">Menu</button>
     </nav>
     <main>
-      <section id="tab-board" class="panel active">
+      <section id="tab-board" class="panel">
         <div class="board-panel">
           <div class="board-viewport" id="viewport">
             <div class="board-world" id="world">
@@ -469,6 +493,7 @@
             </div>
             <div class="board-loading" id="boardLoading">loading your board…</div>
             <div class="eraser-cursor" id="eraserCursor"></div>
+            <div class="pen-cursor" id="penCursor"></div>
           </div>
           <div class="page-tabs" id="pageTabs"></div>
           <div class="sync-note" id="syncNote" style="display:none;">saved only for this session</div>
@@ -561,7 +586,7 @@
         </div>
       </section>
 
-      <section id="tab-menu" class="panel">
+      <section id="tab-menu" class="panel active">
         <div class="menu-wrap">
           <div class="menu-heart">💗</div>
           <p class="menu-eyebrow">together for</p>
@@ -584,6 +609,32 @@
             </div>
           </div>
           <p class="menu-since">since August 3rd, 11:32 PM</p>
+
+          <div class="mood-section">
+            <p class="mood-label">How are you feeling today?</p>
+            <div class="mood-picker" id="moodPicker">
+              <button class="mood-emoji-btn" data-emoji="😊">😊</button>
+              <button class="mood-emoji-btn" data-emoji="🥰">🥰</button>
+              <button class="mood-emoji-btn" data-emoji="😌">😌</button>
+              <button class="mood-emoji-btn" data-emoji="😴">😴</button>
+              <button class="mood-emoji-btn" data-emoji="😩">😩</button>
+              <button class="mood-emoji-btn" data-emoji="😢">😢</button>
+              <button class="mood-emoji-btn" data-emoji="😤">😤</button>
+              <button class="mood-emoji-btn" data-emoji="🤒">🤒</button>
+            </div>
+            <div class="mood-display">
+              <div class="mood-you">
+                <span class="mood-display-emoji" id="myMoodEmoji">—</span>
+                <span class="mood-display-label">You</span>
+              </div>
+              <div class="mood-them">
+                <span class="mood-display-emoji" id="otherMoodEmoji">—</span>
+                <span class="mood-display-label" id="otherMoodName">Them</span>
+              </div>
+            </div>
+          </div>
+
+          <button class="backup-btn" id="backupBtn">⬇ Download a backup</button>
         </div>
       </section>
     </main>
@@ -920,7 +971,7 @@ let zCounter = 1;
 let panX=0, panY=0, zoom=1;
 const MIN_ZOOM=0.05, MAX_ZOOM=4;
 
-let viewport, world, svg, photosLayer, eraserCursorEl, cursorsLayer;
+let viewport, world, svg, photosLayer, eraserCursorEl, penCursorEl, cursorsLayer;
 let lastLiveWrite = 0;
 let otherCursors = {};
 let isDrawMode=false;
@@ -943,6 +994,13 @@ function screenToWorld(clientX, clientY){
   const rect = viewport.getBoundingClientRect();
   const x = clientX-rect.left, y = clientY-rect.top;
   return { x:(x-panX)/zoom, y:(y-panY)/zoom };
+}
+function hexToRgba(hex, alpha){
+  const clean = hex.replace('#','');
+  const r = parseInt(clean.substring(0,2),16);
+  const g = parseInt(clean.substring(2,4),16);
+  const b = parseInt(clean.substring(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
 }
 
 let selectedPhotoId = null;
@@ -1175,6 +1233,11 @@ function renderStroke(stroke){
 }
 function pointsToPath(points){
   if(points.length===0) return '';
+  if(points.length===1){
+    const p = points[0];
+    // a lone point needs a zero-length segment to actually render as a dot with round linecap
+    return `M ${p.x.toFixed(1)} ${p.y.toFixed(1)} L ${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
+  }
   return 'M ' + points.map(p=>`${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' L ');
 }
 function eraseAt(worldPt){
@@ -1194,12 +1257,28 @@ function eraseAt(worldPt){
   }
   return changed;
 }
+function densifyPoints(points, maxSpacing){
+  if(points.length < 2) return points.slice();
+  const result = [points[0]];
+  for(let i=1;i<points.length;i++){
+    const a = points[i-1], b = points[i];
+    const segLen = Math.hypot(b.x-a.x, b.y-a.y);
+    const steps = Math.max(1, Math.ceil(segLen/maxSpacing));
+    for(let s=1;s<=steps;s++){
+      const t = s/steps;
+      result.push({ x: a.x + (b.x-a.x)*t, y: a.y + (b.y-a.y)*t });
+    }
+  }
+  return result;
+}
 function eraseAtPrecise(worldPt){
   const threshold = eraserRadius;
+  const step = Math.max(3, threshold/3); // fine enough sampling that removal actually tracks the circle's real size
   let changed = false;
   const result = [];
   for(const stroke of boardState.strokes){
-    const keep = stroke.points.map(p => Math.hypot(p.x-worldPt.x, p.y-worldPt.y) >= threshold);
+    const densePoints = densifyPoints(stroke.points, step);
+    const keep = densePoints.map(p => Math.hypot(p.x-worldPt.x, p.y-worldPt.y) >= threshold);
     if(keep.every(k=>k)){
       result.push(stroke);
       continue;
@@ -1216,8 +1295,8 @@ function eraseAtPrecise(worldPt){
       }
       run = [];
     };
-    for(let i=0;i<stroke.points.length;i++){
-      if(keep[i]) run.push(stroke.points[i]);
+    for(let i=0;i<densePoints.length;i++){
+      if(keep[i]) run.push(densePoints[i]);
       else flush();
     }
     flush();
@@ -1351,6 +1430,7 @@ async function initBoard(){
   svg = document.getElementById('stroke-svg');
   photosLayer = document.getElementById('photos-layer');
   eraserCursorEl = document.getElementById('eraserCursor');
+  penCursorEl = document.getElementById('penCursor');
   cursorsLayer = document.getElementById('cursors-layer');
 
   applyTransform();
@@ -1419,6 +1499,19 @@ async function initBoard(){
       eraserCursorEl.style.top = (e.clientY-rect.top-size/2)+'px';
       eraserCursorEl.style.display='block';
     }
+    if(isDrawMode){
+      const rect = viewport.getBoundingClientRect();
+      const size = Math.max(penSize*zoom, 6); // floor so a 1px pen is still visible as a cursor
+      penCursorEl.style.width = size+'px';
+      penCursorEl.style.height = size+'px';
+      penCursorEl.style.left = (e.clientX-rect.left-size/2)+'px';
+      penCursorEl.style.top = (e.clientY-rect.top-size/2)+'px';
+      penCursorEl.style.background = hexToRgba(currentPenColor, 0.35);
+      penCursorEl.style.borderColor = currentPenColor;
+      penCursorEl.style.display='block';
+    } else {
+      penCursorEl.style.display='none';
+    }
     if(!pointers.has(e.pointerId)) return;
     pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
     if(mode==='pan' && pointers.size===1){
@@ -1446,14 +1539,13 @@ async function initBoard(){
       applyTransform();
     }
   });
-  viewport.addEventListener('pointerleave', ()=>{ eraserCursorEl.style.display='none'; });
+  viewport.addEventListener('pointerleave', ()=>{ eraserCursorEl.style.display='none'; penCursorEl.style.display='none'; });
 
   function endPointer(e){
     pointers.delete(e.pointerId);
     viewport.classList.remove('panning');
     if(mode==='draw' && currentStroke){
-      if(currentStroke.points.length>1){ boardState.strokes.push(currentStroke); saveIndex(); }
-      else if(currentPath) currentPath.remove();
+      boardState.strokes.push(currentStroke); saveIndex();
       currentStroke=null; currentPath=null;
       clearLiveDrawing();
     }
@@ -1498,6 +1590,7 @@ async function initBoard(){
     viewport.classList.toggle('erase-mode', tool==='eraser');
     eraserPopover.classList.toggle('open', tool==='eraser');
     if(tool!=='eraser') eraserCursorEl.style.display='none';
+    if(tool!=='pen') penCursorEl.style.display='none';
   }
   pointerBtn.addEventListener('click', ()=>setTool('pointer'));
   penBtn.addEventListener('click', ()=>setTool(isDrawMode ? 'pointer' : 'pen'));
@@ -1792,12 +1885,55 @@ function updateTogetherTimer(){
   document.getElementById('timerSeconds').textContent = String(seconds).padStart(2,'0');
 }
 
+// ---------- Mood check-in ----------
+function setupMoods(){
+  document.getElementById('otherMoodName').textContent = otherCharacterName();
+  document.querySelectorAll('.mood-emoji-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const emoji = btn.dataset.emoji;
+      db.collection('moods').doc(myCharacter).set({ emoji, updatedAt: Date.now() }).catch(()=>{});
+    });
+  });
+  db.collection('moods').onSnapshot(snap=>{
+    snap.forEach(doc=>{
+      const d = doc.data();
+      if(doc.id === myCharacter){
+        document.getElementById('myMoodEmoji').textContent = d.emoji || '—';
+        document.querySelectorAll('.mood-emoji-btn').forEach(b=> b.classList.toggle('active', b.dataset.emoji===d.emoji));
+      } else if(doc.id !== myCharacter){
+        document.getElementById('otherMoodEmoji').textContent = d.emoji || '—';
+      }
+    });
+  });
+}
+
+// ---------- Backup export ----------
+function exportBackup(){
+  const data = {
+    exportedAt: new Date().toISOString(),
+    pages: pages,
+    photos: photoCache,
+    notes: notes
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `our-board-backup-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+document.getElementById('backupBtn').addEventListener('click', exportBackup);
+
 function initApp(){
   setupTabs();
   setupJar();
   initBoard();
   setupPresence();
   setupLiveCursors();
+  setupMoods();
   updateTogetherTimer();
   setInterval(updateTogetherTimer, 1000);
 }
