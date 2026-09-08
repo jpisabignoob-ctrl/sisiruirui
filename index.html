@@ -147,7 +147,10 @@
     background:var(--pink);color:white;border:none;font-size:13px;line-height:20px;
     cursor:pointer;opacity:0;transition:opacity .15s;
   }
-  .photo-item:hover .del-btn{opacity:1;}
+  .photo-item:hover .del-btn, .photo-item.selected .del-btn{opacity:1;}
+  @media (hover: none){
+    .photo-item .del-btn{opacity:.7;}
+  }
 
   .photo-item .resize-handle, .photo-item .rotate-handle, .photo-item .flip-toolbar{ display:none; }
   .photo-item.selected .resize-handle, .photo-item.selected .rotate-handle, .photo-item.selected .flip-toolbar{ display:flex; }
@@ -409,6 +412,138 @@
     .card{padding:34px 24px;}
     .toolbar button{width:36px;height:36px;font-size:15px;}
   }
+
+  /* ---------- LETTERS ---------- */
+  .tab-badge{
+    display:none;margin-left:6px;background:var(--pink);color:white;
+    font-size:10.5px;font-weight:700;line-height:1;padding:3px 6px;
+    border-radius:999px;vertical-align:1px;
+  }
+  .tab-badge.show{display:inline-block;}
+
+  .letters-nudge{
+    display:none;align-items:center;gap:8px;margin-top:22px;
+    background:var(--pink-light);border:none;border-radius:999px;
+    color:var(--pink-dark);font-size:12.5px;font-weight:600;
+    padding:10px 18px;min-height:40px;cursor:pointer;font-family:'Inter',sans-serif;
+  }
+  .letters-nudge.show{display:inline-flex;}
+  .letters-nudge:hover{background:#FCE4EC;}
+
+  .link-btn{
+    background:none;border:none;color:var(--gray);font-size:12.5px;
+    padding:10px 6px;min-height:40px;cursor:pointer;text-decoration:underline;
+    text-underline-offset:3px;text-decoration-color:var(--border);
+  }
+  .link-btn:hover{color:var(--pink-dark);}
+  .link-btn:disabled{text-decoration:none;cursor:default;color:var(--gray);}
+  .ghost-btn{
+    background:var(--white);border:1px solid var(--border);color:var(--gray);
+    font-size:13px;font-weight:600;padding:11px 18px;min-height:42px;
+    border-radius:999px;cursor:pointer;font-family:'Inter',sans-serif;
+  }
+  .ghost-btn:hover{border-color:var(--pink);color:var(--pink-dark);}
+
+  .letter-compose{max-width:560px;margin:0 auto;padding:22px 22px 60px;}
+  .compose-to{font-size:12.5px;color:var(--gray);margin:0 0 12px;}
+  .letter-subject{
+    width:100%;padding:12px 16px;border-radius:12px;border:1.5px solid var(--border);
+    font-family:'Inter',sans-serif;font-size:14.5px;outline:none;margin-bottom:10px;
+    min-height:44px;background:var(--white);color:var(--ink);
+  }
+  .letter-subject:focus{border-color:var(--pink);}
+  #letterBody{
+    width:100%;min-height:288px;border:1.5px solid var(--border);border-radius:16px;
+    padding:16px 18px;font-family:'Inter',sans-serif;font-size:14.5px;line-height:28px;
+    color:var(--ink);outline:none;resize:vertical;display:block;
+    background-color:var(--white);
+    background-image:linear-gradient(transparent 27px, var(--border) 27px, var(--border) 28px, transparent 28px);
+    background-size:100% 28px;background-origin:content-box;background-attachment:local;
+  }
+  #letterBody:focus{border-color:var(--pink);}
+  .compose-meta{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    min-height:18px;margin-top:8px;font-size:11.5px;color:var(--gray);
+  }
+  .compose-meta .char-count.near{color:var(--pink-dark);}
+  .compose-actions{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap;}
+  .compose-actions .primary-btn{width:auto;flex:1 1 auto;min-width:160px;min-height:44px;}
+  .deliver-row{
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    margin-top:10px;font-size:12.5px;color:var(--gray);
+  }
+  .deliver-row input[type="date"]{
+    border:1.5px solid var(--border);border-radius:10px;padding:8px 10px;min-height:40px;
+    font-family:'Inter',sans-serif;font-size:12.5px;color:var(--ink);outline:none;background:var(--white);
+  }
+  .deliver-row input[type="date"]:focus{border-color:var(--pink);}
+
+  .letters-list{max-width:520px;margin:0 auto;padding:22px 22px 40px;text-align:left;}
+  .letters-foot{max-width:520px;margin:0 auto;padding:0 22px 50px;text-align:center;}
+  .letter-row{
+    display:flex;gap:13px;align-items:flex-start;width:100%;text-align:left;
+    background:var(--white);border:1px solid var(--border);border-radius:16px;
+    padding:14px 16px;margin-bottom:10px;min-height:56px;cursor:pointer;
+    font-family:'Inter',sans-serif;
+    transition:border-color .15s ease, transform .1s ease, box-shadow .15s ease;
+  }
+  .letter-row:hover{border-color:var(--pink);transform:translateY(-1px);box-shadow:0 8px 18px rgba(242,166,192,0.14);}
+  .letter-row.sealed{background:var(--pink-light);border-color:transparent;}
+  .env-icon{width:28px;height:20px;flex:0 0 auto;margin-top:3px;}
+  .letter-main{flex:1;min-width:0;}
+  .letter-subject-line{font-weight:600;font-size:14.5px;color:var(--ink);margin:0 0 3px;overflow-wrap:anywhere;}
+  .letter-row.sealed .letter-subject-line{color:var(--pink-dark);}
+  .letter-preview{
+    font-size:13px;color:var(--gray);line-height:1.45;overflow:hidden;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere;
+  }
+  .letter-preview.lead{color:var(--ink);font-size:14px;line-height:1.5;}
+  .letter-meta{font-size:11.5px;color:var(--gray);margin-top:7px;}
+  .letter-meta .kept{color:var(--pink-dark);}
+
+  .letter-reader{max-width:600px;margin:0 auto;padding:18px 22px 60px;}
+  .letter-paper{
+    background:var(--white);border:1px solid var(--border);border-radius:20px;
+    box-shadow:0 14px 40px rgba(242,166,192,0.14);padding:30px 26px;margin-top:10px;
+  }
+  .letter-paper h2{font-size:20px;margin:0 0 6px;color:var(--ink);overflow-wrap:anywhere;}
+  .paper-meta{font-size:12px;color:var(--gray);margin:0 0 22px;}
+  .paper-body{font-size:15px;line-height:1.85;color:var(--ink);overflow-wrap:anywhere;}
+  .reader-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:22px;}
+  .reader-actions .danger-link{color:#C75C74;}
+  .reader-actions .danger-link:hover{color:#B14A61;}
+  .keep-btn{
+    background:var(--white);border:1px solid var(--border);border-radius:999px;
+    font-size:12.5px;font-weight:600;color:var(--gray);padding:10px 16px;min-height:40px;
+    cursor:pointer;font-family:'Inter',sans-serif;
+  }
+  .keep-btn:hover{border-color:var(--pink);color:var(--pink-dark);}
+  .keep-btn.on{background:var(--pink-light);border-color:var(--pink);color:var(--pink-dark);}
+
+  @media (max-width:520px){
+    .letter-compose, .letters-list{padding-left:16px;padding-right:16px;}
+    .letter-reader{padding-left:14px;padding-right:14px;}
+    .letter-paper{padding:24px 20px;}
+    .compose-actions .primary-btn{min-width:0;width:100%;}
+    .compose-actions .ghost-btn{width:100%;}
+    /* four tabs now — keep them clear of the switch pill on a phone */
+    nav.tabs button{padding:10px 11px 14px;font-size:14px;}
+    nav.tabs button.active::after{left:9px;right:9px;}
+    .exit-label{display:none;}
+    .exit-btn{padding:6px 9px;}
+  }
+
+  /* ---------- TOAST ---------- */
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(6px);
+    background:var(--white);color:var(--ink);font-size:12.5px;font-weight:600;
+    padding:10px 18px;border-radius:999px;border:1px solid var(--border);
+    border-left:4px solid var(--pink);box-shadow:0 10px 26px rgba(0,0,0,0.14);
+    z-index:9999999;opacity:0;pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease;
+    max-width:calc(100vw - 40px);text-align:center;white-space:normal;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 </style>
 </head>
 <body>
@@ -478,11 +613,12 @@
   <!-- APP -->
   <div id="app" style="display:none;">
     <div class="presence-pill" id="presencePill">🟢 Someone else is here too</div>
-    <button class="exit-btn" id="exitBtn" title="Switch person">🚪 Switch</button>
+    <button class="exit-btn" id="exitBtn" title="Switch person">🚪<span class="exit-label"> Switch</span></button>
     <nav class="tabs" id="tabs">
       <button data-tab="menu" class="active">Menu</button>
       <button data-tab="board">Board</button>
       <button data-tab="notes">Notes</button>
+      <button data-tab="letters">Letters<span class="tab-badge" id="lettersBadge"></span></button>
     </nav>
     <main>
       <section id="tab-board" class="panel">
@@ -588,6 +724,48 @@
         </div>
       </section>
 
+      <section id="tab-letters" class="panel">
+        <nav class="subtabs" id="lettersSubtabs">
+          <button data-lsub="write" class="active">Write</button>
+          <button data-lsub="inbox">Inbox<span class="tab-badge" id="inboxBadge"></span></button>
+          <button data-lsub="sent">Sent</button>
+        </nav>
+        <div class="sub-panel active" id="lsub-write">
+          <div class="letter-compose">
+            <p class="compose-to">A letter for <span id="letterToName">them</span></p>
+            <input type="text" id="letterSubject" class="letter-subject" placeholder="Subject, if you want one" maxlength="80" />
+            <textarea id="letterBody" placeholder="Take as long as you like." maxlength="5000"></textarea>
+            <div class="compose-meta">
+              <span class="char-count" id="letterCount"></span>
+              <span class="draft-note" id="draftNote"></span>
+            </div>
+            <div class="compose-actions">
+              <button class="primary-btn" id="sendLetterBtn" disabled>Seal &amp; send</button>
+              <button class="ghost-btn" id="saveDraftBtn">Save draft</button>
+            </div>
+            <div class="deliver-row">
+              <button class="link-btn" id="deliverToggleBtn">deliver on a later date</button>
+              <span id="deliverPicker" style="display:none;">
+                <input type="date" id="deliverDate" />
+                <button class="link-btn" id="deliverClearBtn">send now instead</button>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="sub-panel" id="lsub-inbox">
+          <div class="letters-list" id="inboxList"></div>
+          <div class="letters-foot">
+            <button class="link-btn" id="notifyToggleBtn">notify me when letters arrive</button>
+          </div>
+        </div>
+        <div class="sub-panel" id="lsub-sent">
+          <div class="letters-list" id="sentList"></div>
+        </div>
+        <div class="sub-panel" id="lsub-reader">
+          <div class="letter-reader" id="letterReader"></div>
+        </div>
+      </section>
+
       <section id="tab-menu" class="panel active">
         <div class="menu-wrap">
           <div class="menu-heart">💗</div>
@@ -611,6 +789,8 @@
             </div>
           </div>
           <p class="menu-since">since August 3rd, 11:32 PM</p>
+
+          <button class="letters-nudge" id="lettersNudge"></button>
 
           <div class="mood-section">
             <p class="mood-label">How are you feeling today?</p>
@@ -771,7 +951,7 @@ async function showCharacterScreen(){
         charTaken[d.character] = true;
       }
     });
-  } catch(e){}
+  } catch(e){ console.warn('presence read failed:', e); }
   document.getElementById('ruiruiTakenNote').style.display = charTaken.ruirui ? 'inline-block' : 'none';
   document.getElementById('sisiTakenNote').style.display = charTaken.sisi ? 'inline-block' : 'none';
 }
@@ -799,13 +979,60 @@ document.getElementById('overrideSubmitBtn').addEventListener('click', ()=>{
   const val = document.getElementById('overrideInput').value.toLowerCase();
   const ok = SECURITY_ANSWER_KEYWORDS.every(k=>val.includes(k));
   if(ok){
-    enterAppAsCharacter(overrideTargetChar);
+    enterAppAsCharacter(overrideTargetChar, { force:true });
   } else {
     document.getElementById('overrideError').textContent = "that's not it — try again";
   }
 });
 
-function enterAppAsCharacter(char){
+const PRESENCE_STALE_MS = 60000; // same staleness window used everywhere presence is checked
+
+// Claims a character slot atomically via a small characterClaims/{char} anchor doc.
+// Compromise: the v8 compat Firestore SDK's transaction.get() only reads single documents,
+// not queries, so we can't atomically scan the `presence` collection for "who currently holds
+// this character" inside a transaction. Instead we keep one dedicated doc per character
+// (characterClaims/ruirui, characterClaims/sisi) as the thing the transaction actually
+// contends on — that keeps the existing `presence` doc shape untouched.
+// force:true is used by the override flow (security answer already verified) and always wins,
+// recording who it displaced so that client can be bounced back to the character screen.
+async function enterAppAsCharacter(char, opts={}){
+  const force = !!opts.force;
+  let previousClientId = null;
+  try{
+    const claimRef = db.collection('characterClaims').doc(char);
+    const result = await db.runTransaction(async (tx)=>{
+      const snap = await tx.get(claimRef);
+      const now = Date.now();
+      const data = snap.exists ? snap.data() : null;
+      const heldByOther = data && data.clientId !== clientId && (now - (data.lastSeen||0)) < PRESENCE_STALE_MS;
+      if(heldByOther && !force) return { ok:false };
+      tx.set(claimRef, { clientId, lastSeen: now });
+      return { ok:true, previousClientId: (data && data.clientId !== clientId) ? data.clientId : null };
+    });
+    if(!result.ok){
+      // someone else claimed it between our stale "in use" hint and this click — fall back
+      // to the taken/override screen instead of barging in unannounced.
+      overrideTargetChar = char;
+      charTaken[char] = true;
+      document.getElementById('screen-character').style.display='flex';
+      document.getElementById('overrideBox').style.display='block';
+      document.getElementById('overrideInput').value='';
+      document.getElementById('overrideError').textContent='';
+      document.getElementById('overrideSubmitBtn').disabled = true;
+      document.getElementById(char==='ruirui' ? 'ruiruiTakenNote' : 'sisiTakenNote').style.display='inline-block';
+      return;
+    }
+    previousClientId = result.previousClientId;
+  } catch(e){
+    // Transaction itself failed (e.g. offline) — don't lock either of you out over a transient
+    // error, just proceed without the atomic guarantee this time.
+    console.warn('character claim transaction failed, entering anyway:', e);
+  }
+  if(previousClientId){
+    db.collection('presence').doc(previousClientId)
+      .set({ kickedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge:true })
+      .catch(onSyncError);
+  }
   myCharacter = char;
   currentPenColor = char === 'ruirui' ? '#8CD9CC' : '#F2A6C0';
   localStorage.setItem('character', char);
@@ -816,10 +1043,40 @@ function enterAppAsCharacter(char){
   initApp();
 }
 
-document.getElementById('exitBtn').addEventListener('click', ()=>{
+let kicked = false;
+function handleKicked(){
+  if(kicked) return;
+  kicked = true;
+  showToast("looks like you were signed in elsewhere");
+  setTimeout(()=>{
+    localStorage.removeItem('character');
+    db.collection('presence').doc(clientId).delete().catch(()=>{});
+    db.collection('liveState').doc(clientId).delete().catch(()=>{});
+    location.reload();
+  }, 1600);
+}
+
+document.getElementById('exitBtn').addEventListener('click', async ()=>{
   localStorage.removeItem('character');
+  try{
+    await Promise.race([
+      Promise.all([
+        db.collection('presence').doc(clientId).delete(),
+        db.collection('liveState').doc(clientId).delete()
+      ]),
+      new Promise(res=>setTimeout(res, 1200)) // don't let a slow network hang the switch
+    ]);
+  } catch(e){ console.warn('presence cleanup on exit failed:', e); }
   location.reload();
 });
+
+// Best-effort: also try to clear our live cursor doc if the tab is just closed/refreshed
+// without hitting the exit button.
+function cleanupLiveStateOnUnload(){
+  try{ db.collection('liveState').doc(clientId).delete().catch(()=>{}); } catch(e){}
+}
+window.addEventListener('pagehide', cleanupLiveStateOnUnload);
+window.addEventListener('beforeunload', cleanupLiveStateOnUnload);
 
 // ---------- Tabs ----------
 function setupTabs(){
@@ -839,6 +1096,36 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+// ---------- Toast (small inline feedback, bottom-centre) ----------
+let toastEl = null;
+let toastHideTimer = null;
+function showToast(msg){
+  if(!toastEl){
+    toastEl = document.createElement('div');
+    toastEl.className = 'toast';
+    document.body.appendChild(toastEl);
+  }
+  toastEl.textContent = msg;
+  clearTimeout(toastHideTimer);
+  // reflow so re-triggering the same message still re-animates
+  toastEl.classList.remove('show'); void toastEl.offsetWidth; toastEl.classList.add('show');
+  toastHideTimer = setTimeout(()=>{ toastEl.classList.remove('show'); }, 4000);
+}
+
+// ---------- Shared Firestore write-error handler ----------
+// Every Firestore *write* funnels its failure here so the user finds out something
+// didn't save, without a toast firing on every single throttled write in a bad patch
+// of connectivity (at most one every 30s).
+let lastSyncErrorToastAt = 0;
+function onSyncError(e){
+  console.warn('sync failed:', e);
+  const now = Date.now();
+  if(now - lastSyncErrorToastAt > 30000){
+    lastSyncErrorToastAt = now;
+    showToast("couldn't sync that — check your connection");
+  }
+}
+
 let notes = [];
 function otherCharacterName(){ return myCharacter === 'ruirui' ? 'Sisi' : 'Ruirui'; }
 function unreadForMe(){ return notes.filter(n => n.author !== myCharacter && !n.read); }
@@ -854,7 +1141,7 @@ function setupJar(){
     updateJarCount();
     renderNoteList('readList', readForMe(), 'Nothing read yet.');
     renderNoteList('favList', favoritesForMe(), 'No favorites yet.');
-  });
+  }, e=>console.warn('notes listener failed:', e));
 
   document.getElementById('drawBtn').addEventListener('click', drawNote);
   document.getElementById('addNoteBtn').addEventListener('click', addNote);
@@ -901,7 +1188,7 @@ async function drawNote(){
     noteCard.classList.remove('show');
     noteCard.innerHTML = '';
   });
-  try{ await db.collection('notes').doc(note.id).set({ read:true, readAt: Date.now() }, { merge:true }); } catch(e){}
+  try{ await db.collection('notes').doc(note.id).set({ read:true, readAt: Date.now() }, { merge:true }); } catch(e){ onSyncError(e); }
 }
 
 async function addNote(){
@@ -915,20 +1202,20 @@ async function addNote(){
     const confirm = document.getElementById('addNoteConfirm');
     confirm.style.display = 'block';
     setTimeout(()=>{ confirm.style.display = 'none'; }, 2000);
-  } catch(e){}
+  } catch(e){ onSyncError(e); }
 }
 
 function toggleFavorite(id){
   const note = notes.find(n=>n.id===id);
   if(!note) return null;
   note.favorite = !note.favorite; // update locally right away so the UI reflects it instantly
-  db.collection('notes').doc(id).set({ favorite: note.favorite }, { merge:true }).catch(()=>{});
+  db.collection('notes').doc(id).set({ favorite: note.favorite }, { merge:true }).catch(onSyncError);
   return note.favorite;
 }
 
 function deleteNote(id){
   notes = notes.filter(n=>n.id!==id); // remove locally right away
-  db.collection('notes').doc(id).delete().catch(()=>{});
+  db.collection('notes').doc(id).delete().catch(onSyncError);
   renderNoteList('readList', readForMe(), 'Nothing read yet.');
   renderNoteList('favList', favoritesForMe(), 'No favorites yet.');
   updateJarCount();
@@ -968,19 +1255,21 @@ async function safeGet(key, shared){
     const doc = await db.collection('boardData').doc(key).get();
     if(!doc.exists) return null;
     return { key, value: doc.data().value, shared: true };
-  } catch(e){ return null; }
+  } catch(e){ console.warn('boardData read failed:', e); return null; }
 }
+// Returns the { key, value, shared } record on success, or null on failure — callers should
+// treat the return value as their success/failure signal (see the photo-upload handler).
 async function safeSet(key, value, shared){
   try{
     await db.collection('boardData').doc(key).set({ value });
     return { key, value, shared: true };
-  } catch(e){ storageOK = false; return null; }
+  } catch(e){ storageOK = false; onSyncError(e); return null; }
 }
 async function safeDelete(key, shared){
   try{
     await db.collection('boardData').doc(key).delete();
     return { key, deleted: true, shared: true };
-  } catch(e){ return null; }
+  } catch(e){ onSyncError(e); return null; }
 }
 
 // ---------- Board state ----------
@@ -994,6 +1283,8 @@ const MIN_ZOOM=0.05, MAX_ZOOM=4;
 
 let viewport, world, svg, photosLayer, eraserCursorEl, penCursorEl, cursorsLayer;
 let lastLiveWrite = 0;
+let lastLiveBroadcastPos = null; // last world point we broadcast, to skip sub-pixel/idle moves
+let tabHidden = document.hidden;
 let otherCursors = {};
 let isDrawMode=false;
 let isEraserMode=false;
@@ -1505,7 +1796,7 @@ async function initBoard(){
         } else if(parsed.photos || parsed.strokes){
           newPages = [{ id:'page-1', photos: parsed.photos||[], strokes: parsed.strokes||[] }];
         }
-      }catch(e){}
+      }catch(e){ console.warn('board-index parse failed:', e); }
     }
     newPages.forEach(p=>{
       if(!p.photos) p.photos=[];
@@ -1534,7 +1825,7 @@ async function initBoard(){
       firstLoad = false;
     }
     updateSyncNote();
-  });
+  }, e=>console.warn('board-index listener failed:', e));
 
 
   // --- pointer interactions ---
@@ -1542,7 +1833,13 @@ async function initBoard(){
   viewport.addEventListener('pointerdown', startInteraction);
 
   viewport.addEventListener('pointermove', (e)=>{
+    // Only broadcast live position while actively drawing or erasing — that's the case the
+    // partner actually benefits from seeing (a moving pointer/pen with nothing to show for it
+    // isn't worth a write), and skip it entirely while the tab is hidden.
+    if(tabHidden || (mode!=='draw' && mode!=='erase')) return;
     const wp = screenToWorld(e.clientX, e.clientY);
+    if(lastLiveBroadcastPos && Math.hypot(wp.x-lastLiveBroadcastPos.x, wp.y-lastLiveBroadcastPos.y) < 3) return;
+    lastLiveBroadcastPos = wp;
     const drawingPreview = (mode==='draw' && currentStroke) ? { points: currentStroke.points, color: currentStroke.color, width: currentStroke.width } : null;
     broadcastLiveState(wp.x, wp.y, drawingPreview);
   });
@@ -1597,7 +1894,10 @@ async function initBoard(){
       applyTransform();
     }
   });
-  viewport.addEventListener('pointerleave', ()=>{ eraserCursorEl.style.display='none'; penCursorEl.style.display='none'; });
+  viewport.addEventListener('pointerleave', ()=>{
+    eraserCursorEl.style.display='none'; penCursorEl.style.display='none';
+    lastLiveBroadcastPos = null; // force a fresh broadcast next time the pointer re-enters
+  });
 
   function endPointer(e){
     pointers.delete(e.pointerId);
@@ -1728,9 +2028,25 @@ async function initBoard(){
     const files = Array.from(e.target.files);
     const rect = viewport.getBoundingClientRect();
     const centerWorld = { x:(rect.width/2-panX)/zoom, y:(rect.height/2-panY)/zoom };
+    let anyFailed = false;
     for(const file of files){
-      const { dataUrl, w: imgW, h: imgH } = await fileToDataUrl(file);
+      let dataUrl, imgW, imgH;
+      try{
+        ({ dataUrl, w: imgW, h: imgH } = await fileToDataUrl(file));
+      } catch(err){
+        console.warn('photo encode failed:', err);
+        anyFailed = true;
+        continue;
+      }
       const id = 'p'+Date.now()+Math.random().toString(36).slice(2);
+      // Write the actual image FIRST — only add it to the board (locally and for the partner)
+      // once we know it actually made it to Firestore, so a rejected write can't leave a
+      // permanent blank gap on the other person's board.
+      const written = await safeSet('photo-'+id, dataUrl, true);
+      if(!written){
+        anyFailed = true;
+        continue;
+      }
       const jitter = ()=> (Math.random()-0.5)*140;
       const displayW = 220;
       const displayH = Math.round(displayW * (imgH/imgW)) || displayW;
@@ -1738,8 +2054,8 @@ async function initBoard(){
       boardState.photos.push(meta);
       photoCache[id] = dataUrl;
       renderPhoto(meta, dataUrl);
-      await safeSet('photo-'+id, dataUrl, true);
     }
+    if(anyFailed) showToast("that photo was too big to sync — try a smaller one");
     updatePhotoCollisions();
     saveIndex();
     photoInput.value = '';
@@ -1787,21 +2103,44 @@ async function initBoard(){
     saveIndex();
   });
 }
+const MAX_PHOTO_DATAURL_LEN = 700000; // ~700KB of base64 — comfortably under Firestore's 1MiB doc cap
 function fileToDataUrl(file, maxDim=1600, quality=0.82){
   return new Promise((resolve, reject)=>{
     const reader = new FileReader();
     reader.onload = ()=>{
       const img = new Image();
       img.onload = ()=>{
-        let w = img.width, h = img.height;
-        if(w > maxDim || h > maxDim){
-          if(w > h){ h = Math.round(h * maxDim/w); w = maxDim; }
-          else { w = Math.round(w * maxDim/h); h = maxDim; }
+        function render(dim, q){
+          let w = img.width, h = img.height;
+          if(w > dim || h > dim){
+            if(w > h){ h = Math.round(h * dim/w); w = dim; }
+            else { w = Math.round(w * dim/h); h = dim; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          return { dataUrl: canvas.toDataURL('image/jpeg', q), w, h };
         }
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        resolve({ dataUrl: canvas.toDataURL('image/jpeg', quality), w, h });
+        let result = render(maxDim, quality);
+        // Too big at the original size/quality — first try squeezing more out of quality...
+        if(result.dataUrl.length > MAX_PHOTO_DATAURL_LEN){
+          for(const q of [0.7, 0.6, 0.5]){
+            result = render(maxDim, q);
+            if(result.dataUrl.length <= MAX_PHOTO_DATAURL_LEN) break;
+          }
+        }
+        // ...and if that still isn't enough, shrink the dimensions too.
+        if(result.dataUrl.length > MAX_PHOTO_DATAURL_LEN){
+          for(const dim of [1200, 900]){
+            result = render(dim, 0.5);
+            if(result.dataUrl.length <= MAX_PHOTO_DATAURL_LEN) break;
+          }
+        }
+        if(result.dataUrl.length > MAX_PHOTO_DATAURL_LEN){
+          reject(new Error('image too large to sync even at reduced quality/size'));
+          return;
+        }
+        resolve(result);
       };
       img.onerror = reject;
       img.src = reader.result;
@@ -1820,7 +2159,9 @@ if(!clientId){
 let latestPresence = {};
 function setupPresence(){
   function heartbeat(){
-    db.collection('presence').doc(clientId).set({ lastSeen: Date.now(), character: myCharacter }).catch(()=>{});
+    // merge:true so this doesn't clobber a `kickedAt` written by another client before we've
+    // had a chance to react to it in the listener below.
+    db.collection('presence').doc(clientId).set({ lastSeen: Date.now(), character: myCharacter }, { merge:true }).catch(onSyncError);
   }
   heartbeat();
   setInterval(heartbeat, 15000);
@@ -1829,7 +2170,15 @@ function setupPresence(){
     latestPresence = {};
     snap.forEach(doc=>{ latestPresence[doc.id] = doc.data().lastSeen; });
     updatePresenceUI();
-  });
+  }, e=>console.warn('presence listener failed:', e));
+
+  // If someone overrode our character slot elsewhere, they mark our presence doc kicked —
+  // notice that and bounce back to the character screen instead of staying logged in as
+  // a character someone else now owns.
+  db.collection('presence').doc(clientId).onSnapshot(doc=>{
+    if(doc.exists && doc.data().kickedAt) handleKicked();
+  }, e=>console.warn('own presence listener failed:', e));
+
   setInterval(updatePresenceUI, 5000);
 }
 function updatePresenceUI(){
@@ -1843,9 +2192,17 @@ function updatePresenceUI(){
 // ---------- Live cursors + mid-stroke sync ----------
 function currentPageId(){ return pages[currentPage] ? pages[currentPage].id : null; }
 
+document.addEventListener('visibilitychange', ()=>{
+  tabHidden = document.hidden;
+  if(tabHidden){
+    lastLiveBroadcastPos = null; // stop broadcasting while hidden; clear any live drawing preview
+    clearLiveDrawing();
+  }
+});
+
 function broadcastLiveState(x, y, drawing){
   const now = Date.now();
-  if(now - lastLiveWrite < 150) return;
+  if(now - lastLiveWrite < 400) return;
   lastLiveWrite = now;
   db.collection('liveState').doc(clientId).set({
     character: myCharacter,
@@ -1853,7 +2210,7 @@ function broadcastLiveState(x, y, drawing){
     x, y,
     drawing: drawing || null,
     updatedAt: now
-  }).catch(()=>{});
+  }).catch(onSyncError);
 }
 function clearLiveDrawing(){
   db.collection('liveState').doc(clientId).set({
@@ -1861,7 +2218,7 @@ function clearLiveDrawing(){
     pageId: currentPageId(),
     drawing: null,
     updatedAt: Date.now()
-  }, { merge: true }).catch(()=>{});
+  }, { merge: true }).catch(onSyncError);
 }
 
 function setupLiveCursors(){
@@ -1872,7 +2229,7 @@ function setupLiveCursors(){
       if(change.type === 'removed'){ removeOtherCursor(id); return; }
       renderOtherCursor(id, change.doc.data());
     });
-  });
+  }, e=>console.warn('liveState listener failed:', e));
   setInterval(()=>{
     const now = Date.now();
     Object.keys(otherCursors).forEach(id=>{
@@ -1949,7 +2306,7 @@ function setupMoods(){
   document.querySelectorAll('.mood-emoji-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const emoji = btn.dataset.emoji;
-      db.collection('moods').doc(myCharacter).set({ emoji, updatedAt: Date.now() }).catch(()=>{});
+      db.collection('moods').doc(myCharacter).set({ emoji, updatedAt: Date.now() }).catch(onSyncError);
     });
   });
   db.collection('moods').onSnapshot(snap=>{
@@ -1962,7 +2319,409 @@ function setupMoods(){
         document.getElementById('otherMoodEmoji').textContent = d.emoji || '—';
       }
     });
+  }, e=>console.warn('moods listener failed:', e));
+}
+
+// ---------- Letters ----------
+// A slower, longer counterpart to the jar: one Firestore doc per letter, live for both of us.
+// Shape: { from, to, subject, body, createdAt, readAt, sealed, kept?, deliverAt? }
+const LETTER_MAX = 5000;
+const BASE_TITLE = document.title;
+let letters = [];
+let knownLetterIds = null; // null until the first snapshot lands, so old letters don't announce themselves
+let openLetterId = null;
+let draftSaveTimer = null;
+
+function draftKey(){ return 'letterDraft:' + myCharacter; }
+function otherCharacterKey(){ return myCharacter === 'ruirui' ? 'sisi' : 'ruirui'; }
+function characterLabel(c){ return c === 'ruirui' ? 'Ruirui' : 'Sisi'; }
+
+function letterDateText(ts){
+  return new Date(ts).toLocaleDateString(undefined, { day:'numeric', month:'long', year:'numeric' });
+}
+function letterTimeAgo(ts){
+  const diff = Date.now() - ts;
+  if(diff < 60000) return 'just now';
+  const mins = Math.floor(diff/60000);
+  if(mins < 60) return mins + ' minute' + (mins===1?'':'s') + ' ago';
+  const hours = Math.floor(diff/3600000);
+  if(hours < 24) return hours + ' hour' + (hours===1?'':'s') + ' ago';
+  const days = Math.floor(diff/86400000);
+  if(days === 1) return 'yesterday';
+  if(days < 30) return days + ' days ago';
+  return 'on ' + letterDateText(ts);
+}
+function bodyToHtml(text){
+  return escapeHtml(text).replace(/\n/g, '<br>');
+}
+function letterPreview(text){
+  const flat = String(text||'').replace(/\s+/g, ' ').trim();
+  return flat.length > 120 ? flat.slice(0,120) + '…' : flat;
+}
+function envelopeSvg(sealed, char){
+  const c = char === 'ruirui' ? '#8CD9CC' : '#F2A6C0';
+  const soft = char === 'ruirui' ? '#E8F7F4' : '#FDEFF4';
+  if(sealed){
+    return `<svg class="env-icon" viewBox="0 0 28 20" aria-hidden="true">
+      <rect x="1" y="1" width="26" height="18" rx="3" fill="${soft}" stroke="${c}" stroke-width="1.5"/>
+      <path d="M1.8 2.4 L14 11.4 L26.2 2.4" fill="none" stroke="${c}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+  }
+  return `<svg class="env-icon" viewBox="0 0 28 20" aria-hidden="true">
+    <rect x="6.5" y="0.9" width="15" height="12" rx="2" fill="#ffffff" stroke="${c}" stroke-width="1.4"/>
+    <path d="M1 6.6 L14 14.2 L27 6.6 L27 17.5 Q27 19 25.5 19 L2.5 19 Q1 19 1 17.5 Z" fill="${soft}" stroke="${c}" stroke-width="1.4" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+function deliverableNow(l){ return !l.deliverAt || l.deliverAt <= Date.now(); }
+function inboxLetters(){ return letters.filter(l => l.to === myCharacter && deliverableNow(l)); }
+function sentLetters(){ return letters.filter(l => l.from === myCharacter); }
+function unreadLetters(){ return inboxLetters().filter(l => !l.readAt); }
+function findLetter(id){ return letters.find(l => l.id === id) || null; }
+
+function switchToTab(name){
+  const btn = document.querySelector(`#tabs button[data-tab="${name}"]`);
+  if(btn) btn.click();
+}
+function switchLetterSub(name){
+  const btns = document.querySelectorAll('#lettersSubtabs button');
+  btns.forEach(b => b.classList.toggle('active', b.dataset.lsub === name));
+  document.getElementById('lettersSubtabs').style.display = 'flex';
+  ['write','inbox','sent','reader'].forEach(n=>{
+    document.getElementById('lsub-'+n).classList.toggle('active', n === name);
   });
+  if(name !== 'reader') openLetterId = null;
+}
+
+function setupLetters(){
+  document.getElementById('letterToName').textContent = characterLabel(otherCharacterKey());
+
+  const subBtns = document.querySelectorAll('#lettersSubtabs button');
+  subBtns.forEach(btn=>{
+    btn.addEventListener('click', ()=> switchLetterSub(btn.dataset.lsub));
+  });
+
+  const bodyEl = document.getElementById('letterBody');
+  const subjectEl = document.getElementById('letterSubject');
+  bodyEl.addEventListener('input', ()=>{
+    document.getElementById('sendLetterBtn').disabled = bodyEl.value.trim().length === 0;
+    updateLetterCount();
+    queueDraftSave();
+  });
+  subjectEl.addEventListener('input', queueDraftSave);
+  document.getElementById('deliverDate').addEventListener('change', queueDraftSave);
+
+  document.getElementById('sendLetterBtn').addEventListener('click', sendLetter);
+  document.getElementById('saveDraftBtn').addEventListener('click', ()=>{
+    saveDraft();
+    showDraftNote('draft saved on this device');
+  });
+  document.getElementById('deliverToggleBtn').addEventListener('click', ()=>{
+    document.getElementById('deliverPicker').style.display = 'inline';
+    document.getElementById('deliverToggleBtn').style.display = 'none';
+  });
+  document.getElementById('deliverClearBtn').addEventListener('click', ()=>{
+    document.getElementById('deliverDate').value = '';
+    document.getElementById('deliverPicker').style.display = 'none';
+    document.getElementById('deliverToggleBtn').style.display = '';
+    queueDraftSave();
+  });
+  document.getElementById('lettersNudge').addEventListener('click', ()=>{
+    switchToTab('letters');
+    switchLetterSub('inbox');
+  });
+  document.getElementById('notifyToggleBtn').addEventListener('click', requestLetterNotifications);
+
+  restoreDraft();
+  updateLetterCount();
+  updateNotifyBtn();
+
+  db.collection('letters').orderBy('createdAt','desc').onSnapshot(snap=>{
+    const arriving = [];
+    letters = [];
+    snap.forEach(doc=>{
+      const l = { id: doc.id, ...doc.data() };
+      letters.push(l);
+      if(knownLetterIds && !knownLetterIds.has(l.id) && l.to === myCharacter && deliverableNow(l)){
+        arriving.push(l);
+      }
+    });
+    if(!knownLetterIds) knownLetterIds = new Set();
+    letters.forEach(l => knownLetterIds.add(l.id));
+    renderLetters();
+    arriving.forEach(announceLetter);
+  }, e=>console.warn('letters listener failed:', e));
+
+  // deliverAt letters simply become visible once their day comes around
+  setInterval(()=>{ if(!openLetterId) renderLetters(); }, 60000);
+}
+
+function updateLetterCount(){
+  const el = document.getElementById('letterCount');
+  const len = document.getElementById('letterBody').value.length;
+  if(len < LETTER_MAX - 500){ el.textContent = ''; el.classList.remove('near'); return; }
+  el.textContent = (LETTER_MAX - len) + ' characters left';
+  el.classList.toggle('near', len > LETTER_MAX - 200);
+}
+function showDraftNote(msg){
+  const el = document.getElementById('draftNote');
+  el.textContent = msg;
+  clearTimeout(showDraftNote._t);
+  showDraftNote._t = setTimeout(()=>{ el.textContent = ''; }, 2500);
+}
+function queueDraftSave(){
+  clearTimeout(draftSaveTimer);
+  draftSaveTimer = setTimeout(saveDraft, 700);
+}
+function saveDraft(){
+  try{
+    const subject = document.getElementById('letterSubject').value;
+    const body = document.getElementById('letterBody').value;
+    const deliver = document.getElementById('deliverDate').value;
+    if(!subject.trim() && !body.trim() && !deliver){ localStorage.removeItem(draftKey()); return; }
+    localStorage.setItem(draftKey(), JSON.stringify({ subject, body, deliver }));
+  } catch(e){ console.warn('draft save failed:', e); }
+}
+function restoreDraft(){
+  try{
+    const raw = localStorage.getItem(draftKey());
+    if(!raw) return;
+    const d = JSON.parse(raw);
+    document.getElementById('letterSubject').value = d.subject || '';
+    document.getElementById('letterBody').value = d.body || '';
+    if(d.deliver){
+      document.getElementById('deliverDate').value = d.deliver;
+      document.getElementById('deliverPicker').style.display = 'inline';
+      document.getElementById('deliverToggleBtn').style.display = 'none';
+    }
+    document.getElementById('sendLetterBtn').disabled = !(d.body || '').trim();
+    if((d.body || '').trim()) showDraftNote('picked up where you left off');
+  } catch(e){ console.warn('draft restore failed:', e); }
+}
+function clearDraft(){
+  try{ localStorage.removeItem(draftKey()); } catch(e){}
+}
+
+async function sendLetter(){
+  const bodyEl = document.getElementById('letterBody');
+  const subjectEl = document.getElementById('letterSubject');
+  const body = bodyEl.value.trim();
+  if(!body) return;
+  const btn = document.getElementById('sendLetterBtn');
+  btn.disabled = true;
+  const letter = {
+    from: myCharacter,
+    to: otherCharacterKey(),
+    subject: subjectEl.value.trim().slice(0,80),
+    body: body.slice(0, LETTER_MAX),
+    createdAt: Date.now(),
+    readAt: null,
+    sealed: true
+  };
+  const deliverVal = document.getElementById('deliverDate').value;
+  if(deliverVal){
+    const t = new Date(deliverVal + 'T09:00:00').getTime();
+    if(!isNaN(t) && t > Date.now()) letter.deliverAt = t;
+  }
+  try{
+    await db.collection('letters').add(letter);
+    bodyEl.value = '';
+    subjectEl.value = '';
+    document.getElementById('deliverDate').value = '';
+    document.getElementById('deliverPicker').style.display = 'none';
+    document.getElementById('deliverToggleBtn').style.display = '';
+    clearDraft();
+    updateLetterCount();
+    showToast(letter.deliverAt ? 'sealed — it will arrive on the day' : 'sealed and sent');
+    switchLetterSub('sent');
+  } catch(e){
+    btn.disabled = false;
+    onSyncError(e);
+  }
+}
+
+function renderLetters(){
+  renderLetterList('inboxList', inboxLetters(), 'inbox');
+  renderLetterList('sentList', sentLetters(), 'sent');
+  updateLetterIndicators();
+  if(openLetterId){
+    const l = findLetter(openLetterId);
+    if(l) renderReader(l); else switchLetterSub('inbox');
+  }
+}
+
+function renderLetterList(elId, list, kind){
+  const wrap = document.getElementById(elId);
+  if(!wrap) return;
+  if(list.length === 0){
+    wrap.innerHTML = `<p class="empty-note">${kind === 'inbox'
+      ? 'Nothing here yet — there will be.'
+      : 'You haven’t written one yet.'}</p>`;
+    return;
+  }
+  wrap.innerHTML = list.map(l=>{
+    const sealed = kind === 'inbox' && !l.readAt;
+    const who = kind === 'inbox' ? l.from : l.to;
+    let meta;
+    if(kind === 'inbox'){
+      meta = `from ${escapeHtml(characterLabel(l.from))} · ${escapeHtml(letterTimeAgo(l.createdAt))}`;
+      if(l.kept) meta += ' · <span class="kept">kept</span>';
+    } else if(l.deliverAt && l.deliverAt > Date.now()){
+      meta = `scheduled for ${escapeHtml(letterDateText(l.deliverAt))}`;
+    } else {
+      meta = l.readAt ? `opened ${escapeHtml(letterTimeAgo(l.readAt))}` : 'still sealed';
+    }
+    const hasSubject = !!(l.subject && l.subject.trim());
+    let main;
+    if(sealed){
+      main = `<p class="letter-subject-line">${hasSubject ? escapeHtml(l.subject) : 'A sealed letter'}</p>
+        <div class="letter-preview">${hasSubject ? 'Sealed — tap to open' : 'Tap to open it'}</div>`;
+    } else if(hasSubject){
+      main = `<p class="letter-subject-line">${escapeHtml(l.subject)}</p>
+        <div class="letter-preview">${escapeHtml(letterPreview(l.body))}</div>`;
+    } else {
+      main = `<div class="letter-preview lead">${escapeHtml(letterPreview(l.body))}</div>`;
+    }
+    return `<div class="letter-row${sealed ? ' sealed' : ''}" role="button" tabindex="0" data-id="${escapeHtml(l.id)}">
+      ${envelopeSvg(!l.readAt, who)}
+      <div class="letter-main">
+        ${main}
+        <div class="letter-meta">${meta}</div>
+      </div>
+    </div>`;
+  }).join('');
+  wrap.querySelectorAll('.letter-row').forEach(row=>{
+    const open = ()=> openLetter(row.dataset.id);
+    row.addEventListener('click', open);
+    row.addEventListener('keydown', e=>{ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); open(); } });
+  });
+}
+
+function openLetter(id){
+  const l = findLetter(id);
+  if(!l) return;
+  if(l.to === myCharacter && !l.readAt){
+    const now = Date.now();
+    l.readAt = now; l.sealed = false; // reflect it locally right away
+    db.collection('letters').doc(id).set({ readAt: now, sealed: false }, { merge:true }).catch(onSyncError);
+  }
+  openLetterId = id;
+  document.getElementById('lettersSubtabs').style.display = 'none';
+  ['write','inbox','sent'].forEach(n=> document.getElementById('lsub-'+n).classList.remove('active'));
+  document.getElementById('lsub-reader').classList.add('active');
+  document.getElementById('lsub-reader').scrollTop = 0;
+  renderReader(l);
+  updateLetterIndicators();
+}
+
+function renderReader(l){
+  const mine = l.from === myCharacter;
+  const wrap = document.getElementById('letterReader');
+  const hasSubject = !!(l.subject && l.subject.trim());
+  let status;
+  if(mine && l.deliverAt && l.deliverAt > Date.now()) status = `scheduled for ${escapeHtml(letterDateText(l.deliverAt))}`;
+  else if(mine) status = l.readAt ? `opened ${escapeHtml(letterTimeAgo(l.readAt))}` : 'still sealed';
+  else status = escapeHtml(letterTimeAgo(l.createdAt));
+  wrap.innerHTML = `
+    <button class="link-btn" id="readerBackBtn">← back</button>
+    <div class="letter-paper">
+      ${hasSubject ? `<h2>${escapeHtml(l.subject)}</h2>` : ''}
+      <p class="paper-meta">${mine ? 'to ' : 'from '}${escapeHtml(characterLabel(mine ? l.to : l.from))} · ${escapeHtml(letterDateText(l.createdAt))} · ${status}</p>
+      <div class="paper-body">${bodyToHtml(l.body || '')}</div>
+      <div class="reader-actions" id="readerActions"></div>
+    </div>`;
+  wrap.querySelector('#readerBackBtn').addEventListener('click', ()=>{
+    switchLetterSub(mine ? 'sent' : 'inbox');
+  });
+  const actions = wrap.querySelector('#readerActions');
+  if(!mine){
+    const keep = document.createElement('button');
+    keep.className = 'keep-btn' + (l.kept ? ' on' : '');
+    keep.textContent = l.kept ? 'kept' : 'keep';
+    keep.addEventListener('click', ()=>{
+      l.kept = !l.kept;
+      keep.classList.toggle('on', l.kept);
+      keep.textContent = l.kept ? 'kept' : 'keep';
+      db.collection('letters').doc(l.id).set({ kept: l.kept }, { merge:true }).catch(onSyncError);
+    });
+    actions.appendChild(keep);
+  } else {
+    // only the person who wrote it can take it back, and it's a two-step
+    const del = document.createElement('button');
+    del.className = 'link-btn danger-link';
+    del.textContent = 'delete this letter';
+    del.addEventListener('click', ()=>{
+      actions.innerHTML = '';
+      const sure = document.createElement('button');
+      sure.className = 'link-btn danger-link';
+      sure.textContent = 'yes, delete it';
+      sure.addEventListener('click', ()=>{
+        letters = letters.filter(x => x.id !== l.id);
+        db.collection('letters').doc(l.id).delete().catch(onSyncError);
+        switchLetterSub('sent');
+        renderLetters();
+      });
+      const nope = document.createElement('button');
+      nope.className = 'link-btn';
+      nope.textContent = 'keep it';
+      nope.addEventListener('click', ()=> renderReader(findLetter(l.id) || l));
+      actions.appendChild(sure);
+      actions.appendChild(nope);
+    });
+    actions.appendChild(del);
+  }
+}
+
+function updateLetterIndicators(){
+  const count = unreadLetters().length;
+  const badge = document.getElementById('lettersBadge');
+  const subBadge = document.getElementById('inboxBadge');
+  [badge, subBadge].forEach(el=>{
+    if(!el) return;
+    el.textContent = count > 9 ? '9+' : String(count);
+    el.classList.toggle('show', count > 0);
+  });
+  const nudge = document.getElementById('lettersNudge');
+  if(nudge){
+    nudge.classList.toggle('show', count > 0);
+    nudge.innerHTML = count > 0
+      ? `${envelopeSvg(true, otherCharacterKey())}<span>${count === 1 ? 'a letter is waiting for you' : count + ' letters are waiting for you'}</span>`
+      : '';
+  }
+  document.title = count > 0 ? `(${count}) ${BASE_TITLE}` : BASE_TITLE;
+}
+
+function announceLetter(l){
+  const name = characterLabel(l.from);
+  showToast(`a letter from ${name} just arrived`);
+  try{
+    if(document.hidden && 'Notification' in window && Notification.permission === 'granted'){
+      new Notification(`a letter from ${name}`, {
+        body: l.subject && l.subject.trim() ? l.subject : 'It’s waiting for you.',
+        tag: 'letter-' + l.id
+      });
+    }
+  } catch(e){ console.warn('notification failed:', e); }
+}
+
+function updateNotifyBtn(){
+  const btn = document.getElementById('notifyToggleBtn');
+  if(!btn) return;
+  if(!('Notification' in window)){ btn.style.display = 'none'; return; }
+  if(Notification.permission === 'granted'){
+    btn.textContent = 'notifications are on';
+    btn.disabled = true;
+  } else if(Notification.permission === 'denied'){
+    btn.style.display = 'none';
+  } else {
+    btn.textContent = 'notify me when letters arrive';
+    btn.disabled = false;
+  }
+}
+function requestLetterNotifications(){
+  try{
+    Notification.requestPermission().then(updateNotifyBtn);
+  } catch(e){ console.warn('notification permission request failed:', e); }
 }
 
 // ---------- Backup export ----------
@@ -1988,6 +2747,7 @@ document.getElementById('backupBtn').addEventListener('click', exportBackup);
 function initApp(){
   setupTabs();
   setupJar();
+  setupLetters();
   initBoard();
   setupPresence();
   setupLiveCursors();
