@@ -260,12 +260,15 @@
 
   .eraser-popover{width:190px;text-align:center;box-sizing:border-box;}
   .eraser-mode-row{display:flex;gap:6px;margin-bottom:10px;width:100%;}
-  .eraser-mode-btn{
-    flex:1 1 0;min-width:0;background:var(--pink-light);border:1.5px solid transparent;border-radius:8px;
+  /* .toolbar button (40px circle) outranks a bare class, so these must be scoped under .toolbar */
+  .toolbar .eraser-mode-btn{
+    flex:1 1 0;min-width:0;width:auto;height:auto;display:inline-block;
+    background:var(--pink-light);border:1.5px solid transparent;border-radius:8px;
     padding:7px 4px;font-size:11.5px;font-weight:600;color:var(--gray);cursor:pointer;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
-  .eraser-mode-btn.active{background:var(--pink);color:white;border-color:var(--pink-dark);}
+  .toolbar .eraser-mode-btn:hover{background:var(--pink-light);}
+  .toolbar .eraser-mode-btn.active{background:var(--pink);color:white;border-color:var(--pink-dark);}
   .eraser-popover input[type="range"], .size-row input[type="range"]{width:100%;accent-color:var(--pink);}
   .eraser-popover .size-label, .size-row .size-label{font-size:12px;color:var(--gray);margin-top:4px;display:block;}
   .size-row{border-top:1px solid var(--border);padding-top:10px;margin-top:10px;text-align:center;}
