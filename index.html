@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content" />
 <title>For You</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -536,6 +536,128 @@
     .exit-btn{padding:6px 9px;}
   }
 
+  /* ---------- CHAT ---------- */
+  /* The fast, everyday channel. A flex column (list grows, composer sits at the bottom) rather
+     than anything position:fixed, so when the viewport shrinks for the keyboard the composer
+     simply rides up with it. */
+  .chat-wrap{
+    flex:1;min-height:0;display:flex;flex-direction:column;
+    width:100%;max-width:680px;margin:0 auto;
+  }
+  .chat-scroll{
+    flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+    padding:18px 20px 32px;-webkit-overflow-scrolling:touch;
+  }
+  .chat-empty{color:var(--gray);font-size:14px;text-align:center;margin:40px auto 0;max-width:260px;line-height:1.6;}
+
+  .chat-day{
+    display:flex;align-items:center;gap:12px;margin:22px 0 14px;
+    font-size:11px;font-weight:600;color:var(--gray);letter-spacing:0.04em;
+  }
+  .chat-day:first-child{margin-top:4px;}
+  .chat-day::before, .chat-day::after{content:'';flex:1;height:1px;background:var(--border);}
+
+  .chat-row{display:flex;align-items:center;gap:6px;margin-top:3px;}
+  .chat-row.group-start{margin-top:12px;}
+  .chat-day + .chat-row.group-start{margin-top:0;}
+  .chat-row.mine{flex-direction:row-reverse;}
+  .bubble{
+    max-width:min(74%, 460px);padding:9px 14px;border-radius:18px;
+    font-size:14.5px;line-height:1.45;color:var(--ink);
+    overflow-wrap:anywhere;word-break:break-word;
+  }
+  /* ~16% of each person's colour on white */
+  .bubble.from-sisi{background:#FDF1F5;}
+  .bubble.from-ruirui{background:#EDF9F7;}
+  .chat-row.mine.joined-below .bubble{border-bottom-right-radius:6px;}
+  .chat-row.mine.joined-above .bubble{border-top-right-radius:6px;}
+  .chat-row.theirs.joined-below .bubble{border-bottom-left-radius:6px;}
+  .chat-row.theirs.joined-above .bubble{border-top-left-radius:6px;}
+  .chat-meta{font-size:10.5px;color:var(--gray);margin:4px 6px 0;}
+  .chat-meta.mine{text-align:right;}
+  .chat-meta .seen{color:var(--pink-dark);}
+
+  .chat-actions{display:flex;align-items:center;gap:2px;flex:0 0 auto;}
+  .chat-del{
+    width:22px;height:22px;border-radius:50%;border:none;background:none;padding:0;
+    color:var(--gray);font-size:15px;line-height:22px;cursor:pointer;
+    opacity:0;transition:opacity .15s ease, background .15s ease;
+  }
+  .chat-row.mine:hover .chat-del, .chat-del:focus-visible{opacity:1;}
+  .chat-del:hover{background:var(--pink-light);color:var(--pink-dark);}
+  .chat-actions .link-btn{font-size:11.5px;padding:4px 5px;min-height:0;}
+  .chat-actions .danger-link{color:#C75C74;}
+  .chat-actions .danger-link:hover{color:#B14A61;}
+  @media (hover: none){
+    .chat-del{display:none;}
+    /* long-press is the delete gesture on touch, so keep the OS callout off your own bubbles */
+    .chat-row.mine .bubble{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
+  }
+
+  .chat-composer{
+    position:relative;flex:0 0 auto;display:flex;align-items:flex-end;gap:8px;
+    padding:8px 16px max(12px, env(safe-area-inset-bottom));background:var(--white);
+  }
+  .chat-status{
+    position:absolute;left:16px;right:16px;bottom:100%;height:26px;padding:0 8px 4px;
+    display:flex;align-items:flex-end;justify-content:space-between;gap:10px;
+    font-size:11.5px;color:var(--gray);pointer-events:none;
+    /* the list scrolls underneath, so fade it out rather than print over it */
+    background:linear-gradient(to bottom, rgba(255,255,255,0), var(--white) 9px);
+  }
+  .chat-typing{opacity:0;transition:opacity .2s ease;}
+  .chat-typing.show{opacity:1;}
+  .chat-count.near{color:var(--pink-dark);}
+  #chatInput{
+    flex:1;min-width:0;resize:none;display:block;
+    border:1.5px solid var(--border);border-radius:20px;
+    padding:9px 16px;min-height:40px;max-height:104px;
+    font-family:'Inter',sans-serif;font-size:15px;line-height:20px;color:var(--ink);
+    background:var(--white);outline:none;overflow-y:hidden;
+  }
+  #chatInput:focus{border-color:var(--pink);}
+  .chat-send{
+    flex:0 0 auto;width:40px;height:40px;border-radius:50%;border:none;
+    background:var(--pink);color:white;cursor:pointer;padding:0;
+    display:flex;align-items:center;justify-content:center;
+    transition:background .15s ease, transform .1s ease;
+  }
+  .chat-send:hover{background:var(--pink-dark);}
+  .chat-send:active{transform:scale(.94);}
+  .chat-send:disabled{background:var(--border);cursor:default;transform:none;}
+  .chat-send svg{width:18px;height:18px;}
+  .chat-send:focus-visible, .chat-new-pill:focus-visible{outline:2px solid var(--pink);outline-offset:2px;}
+
+  .chat-new-pill{
+    position:absolute;left:50%;bottom:calc(100% + 26px);transform:translateX(-50%) translateY(4px);
+    background:var(--white);color:var(--pink-dark);border:1px solid var(--border);
+    box-shadow:0 8px 20px rgba(0,0,0,0.10);border-radius:999px;
+    font-family:'Inter',sans-serif;font-size:12px;font-weight:600;padding:7px 14px;
+    cursor:pointer;opacity:0;pointer-events:none;transition:opacity .2s ease, transform .2s ease;
+  }
+  .chat-new-pill.show{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0);}
+
+  .chat-nudge-icon{width:22px;height:18px;flex:0 0 auto;}
+  .letters-nudge.show + .chat-nudge{margin-top:10px;}
+
+  @media (max-width:520px){
+    .chat-scroll{padding:14px 14px 32px;}
+    .chat-composer{padding-left:12px;padding-right:12px;}
+    .chat-status{left:12px;right:12px;}
+    .bubble{max-width:80%;}
+    /* five tabs on a phone — tighten so they stay clear of the pills either side */
+    nav.tabs{gap:0;}
+    nav.tabs button{padding:10px 6px 14px;font-size:13.5px;}
+    nav.tabs button.active::after{left:5px;right:5px;}
+    nav.tabs .tab-badge{margin-left:3px;padding:3px 5px;}
+    .presence-label{display:none;}
+  }
+
+  @media (max-width:380px){
+    /* narrowest phones: counts become dots (the number is still in the title and on the menu) */
+    nav.tabs .tab-badge.show{font-size:0;width:7px;height:7px;padding:0;margin-left:2px;vertical-align:7px;}
+  }
+
   /* ---------- TOAST ---------- */
   .toast{
     position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(6px);
@@ -615,13 +737,14 @@
 
   <!-- APP -->
   <div id="app" style="display:none;">
-    <div class="presence-pill" id="presencePill">🟢 Someone else is here too</div>
+    <div class="presence-pill" id="presencePill" title="Someone else is here too">🟢<span class="presence-label"> Someone else is here too</span></div>
     <button class="exit-btn" id="exitBtn" title="Switch person">🚪<span class="exit-label"> Switch</span></button>
     <nav class="tabs" id="tabs">
       <button data-tab="menu" class="active">Menu</button>
       <button data-tab="board">Board</button>
       <button data-tab="notes">Notes</button>
       <button data-tab="letters">Letters<span class="tab-badge" id="lettersBadge"></span></button>
+      <button data-tab="chat">Chat<span class="tab-badge" id="chatBadge"></span></button>
     </nav>
     <main>
       <section id="tab-board" class="panel">
@@ -758,7 +881,7 @@
         <div class="sub-panel" id="lsub-inbox">
           <div class="letters-list" id="inboxList"></div>
           <div class="letters-foot">
-            <button class="link-btn" id="notifyToggleBtn">notify me when letters arrive</button>
+            <button class="link-btn" id="notifyToggleBtn">notify me when letters or messages arrive</button>
           </div>
         </div>
         <div class="sub-panel" id="lsub-sent">
@@ -766,6 +889,25 @@
         </div>
         <div class="sub-panel" id="lsub-reader">
           <div class="letter-reader" id="letterReader"></div>
+        </div>
+      </section>
+
+      <section id="tab-chat" class="panel">
+        <div class="chat-wrap">
+          <div class="chat-scroll" id="chatScroll">
+            <div class="chat-list" id="chatList"></div>
+          </div>
+          <form class="chat-composer" id="chatComposer" autocomplete="off">
+            <div class="chat-status" aria-live="polite">
+              <span class="chat-typing" id="chatTyping"></span>
+              <span class="chat-count" id="chatCount"></span>
+            </div>
+            <button type="button" class="chat-new-pill" id="chatNewPill">new message ↓</button>
+            <textarea id="chatInput" rows="1" maxlength="1000" enterkeyhint="send" placeholder="Message them" aria-label="Message"></textarea>
+            <button type="submit" class="chat-send" id="chatSendBtn" disabled aria-label="Send">
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 16V4.5M10 4.5L5 9.5M10 4.5l5 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </form>
         </div>
       </section>
 
@@ -794,6 +936,7 @@
           <p class="menu-since">since August 3rd, 11:32 PM</p>
 
           <button class="letters-nudge" id="lettersNudge"></button>
+          <button class="letters-nudge chat-nudge" id="chatNudge"></button>
 
           <div class="mood-section">
             <p class="mood-label">How are you feeling today?</p>
@@ -2229,8 +2372,10 @@ function setupLiveCursors(){
     snap.docChanges().forEach(change=>{
       const id = change.doc.id;
       if(id === clientId) return;
-      if(change.type === 'removed'){ removeOtherCursor(id); return; }
-      renderOtherCursor(id, change.doc.data());
+      if(change.type === 'removed'){ removeOtherCursor(id); noteTyping(id, null); return; }
+      const d = change.doc.data();
+      renderOtherCursor(id, d);
+      noteTyping(id, d); // the chat's typing indicator rides on the same doc
     });
   }, e=>console.warn('liveState listener failed:', e));
   setInterval(()=>{
@@ -2691,7 +2836,7 @@ function updateLetterIndicators(){
       ? `${envelopeSvg(true, otherCharacterKey())}<span>${count === 1 ? 'a letter is waiting for you' : count + ' letters are waiting for you'}</span>`
       : '';
   }
-  document.title = count > 0 ? `(${count}) ${BASE_TITLE}` : BASE_TITLE;
+  updateDocumentTitle();
 }
 
 function announceLetter(l){
@@ -2717,7 +2862,7 @@ function updateNotifyBtn(){
   } else if(Notification.permission === 'denied'){
     btn.style.display = 'none';
   } else {
-    btn.textContent = 'notify me when letters arrive';
+    btn.textContent = 'notify me when letters or messages arrive';
     btn.disabled = false;
   }
 }
@@ -2725,6 +2870,417 @@ function requestLetterNotifications(){
   try{
     Notification.requestPermission().then(updateNotifyBtn);
   } catch(e){ console.warn('notification permission request failed:', e); }
+}
+
+// ---------- Chat ----------
+// The fast, everyday counterpart to letters: short messages, live for both of us.
+// Shape: { from, to, text (≤1000), createdAt: ms, readAt: null|ms }
+// Typing rides on the existing liveState/{clientId} doc as { typing, typingAt }, always written
+// with merge so the cursor fields survive (and the doc stays within the rules' 8-field cap).
+const CHAT_MAX = 1000;
+const CHAT_LIMIT = 200;           // newest N are loaded; anything older stays in Firestore
+const CHAT_GROUP_MS = 5 * 60000;  // same sender within 5 minutes shares one timestamp
+const CHAT_NEAR_BOTTOM_PX = 80;
+const TYPING_WRITE_MS = 2000, TYPING_IDLE_MS = 3000, TYPING_SHOW_MS = 5000;
+let messages = [];                // ascending by createdAt
+let knownMessageIds = null;       // null until the first snapshot, so history doesn't announce itself
+let chatPinned = true;            // was the list at (or near) the bottom when we last looked
+let chatSavedScrollTop = 0;
+let chatConfirmId = null, chatConfirmAt = 0; // message showing its inline "delete / keep" step
+let lastChatReadWrite = 0, chatReadTimer = null;
+let lastChatRenderDay = null;
+let typingOn = false, lastTypingWrite = 0, typingIdleTimer = null;
+let partnerTyping = {};           // liveState clientId -> { typingAt, seenAt }
+let typingHideTimer = null;
+
+function chatTabActive(){
+  const panel = document.getElementById('tab-chat');
+  return !!panel && panel.classList.contains('active');
+}
+function isChatOpen(){ return chatTabActive() && !document.hidden; }
+function unreadMessages(){ return messages.filter(m => m.to === myCharacter && !m.readAt); }
+
+// Letters and chat both feed the "(n)" in the browser tab, so neither one owns the title.
+function updateDocumentTitle(){
+  const n = unreadLetters().length + unreadMessages().length;
+  document.title = n > 0 ? `(${n}) ${BASE_TITLE}` : BASE_TITLE;
+}
+
+function chatDayKey(ts){ const d = new Date(ts); return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate(); }
+function chatDayText(ts){
+  const now = new Date();
+  if(chatDayKey(ts) === chatDayKey(now.getTime())) return 'Today';
+  if(chatDayKey(ts) === chatDayKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1).getTime())) return 'Yesterday';
+  const opts = { weekday:'long', day:'numeric', month:'long' };
+  if(new Date(ts).getFullYear() !== now.getFullYear()) opts.year = 'numeric';
+  return new Date(ts).toLocaleDateString(undefined, opts);
+}
+function chatTimeText(ts){ return new Date(ts).toLocaleTimeString(undefined, { hour:'numeric', minute:'2-digit' }); }
+function chatPreview(text, max){
+  const flat = String(text || '').replace(/\s+/g, ' ').trim();
+  return flat.length > max ? flat.slice(0, max) + '…' : flat;
+}
+function chatBubbleSvg(char){
+  const c = char === 'ruirui' ? '#8CD9CC' : '#F2A6C0';
+  const soft = char === 'ruirui' ? '#E8F7F4' : '#FDEFF4';
+  return `<svg class="chat-nudge-icon" viewBox="0 0 22 18" aria-hidden="true">
+    <path d="M4 1.2h14a2.8 2.8 0 0 1 2.8 2.8v7a2.8 2.8 0 0 1-2.8 2.8H9.5L5.6 16.8v-3H4A2.8 2.8 0 0 1 1.2 11V4A2.8 2.8 0 0 1 4 1.2z" fill="${soft}" stroke="${c}" stroke-width="1.4" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+function setupChat(){
+  const input = document.getElementById('chatInput');
+  const scroller = document.getElementById('chatScroll');
+  const list = document.getElementById('chatList');
+  input.placeholder = 'Message ' + characterLabel(otherCharacterKey());
+
+  document.getElementById('chatComposer').addEventListener('submit', e=>{ e.preventDefault(); sendChatMessage(); });
+  // keep focus (and the phone keyboard) in the input when the send button is tapped
+  document.getElementById('chatSendBtn').addEventListener('mousedown', e=> e.preventDefault());
+  input.addEventListener('keydown', e=>{
+    // Enter sends, Shift+Enter is a newline — but never while an IME is composing (pinyin confirms with Enter)
+    if(e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229){
+      e.preventDefault();
+      sendChatMessage();
+    }
+  });
+  input.addEventListener('input', ()=>{
+    autosizeChatInput();
+    updateChatComposerState();
+    if(input.value.trim()) noteMyTyping(); else stopMyTyping();
+  });
+
+  scroller.addEventListener('scroll', ()=>{
+    chatSavedScrollTop = scroller.scrollTop;
+    chatPinned = chatNearBottom();
+    if(chatPinned) hideNewPill();
+  }, { passive:true });
+  document.getElementById('chatNewPill').addEventListener('click', ()=>{ scrollChatToBottom(true); hideNewPill(); });
+  document.getElementById('chatNudge').addEventListener('click', ()=> switchToTab('chat'));
+
+  list.addEventListener('click', e=>{
+    const btn = e.target.closest('button[data-act]');
+    const row = btn && btn.closest('.chat-row');
+    if(!row) return;
+    if(btn.dataset.act === 'del') beginChatDelete(row.dataset.id);
+    else if(btn.dataset.act === 'confirm-del') deleteChatMessage(row.dataset.id);
+    else if(btn.dataset.act === 'keep') cancelChatDelete();
+  });
+  // a tap anywhere else backs out of a half-started delete (the grace period swallows the
+  // click that some phones fire at the end of the long-press that started it)
+  document.addEventListener('click', e=>{
+    if(chatConfirmId && Date.now() - chatConfirmAt > 600 && !e.target.closest('.chat-actions')) cancelChatDelete();
+  });
+  setupChatLongPress(scroller);
+
+  // registered after setupTabs, so the panel has already switched when this runs
+  document.querySelectorAll('#tabs button').forEach(btn=> btn.addEventListener('click', onChatTabChange));
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.hidden) stopMyTyping(); else markChatRead();
+  });
+  if(window.visualViewport) window.visualViewport.addEventListener('resize', fitChatToViewport);
+
+  db.collection('messages').orderBy('createdAt','desc').limit(CHAT_LIMIT).onSnapshot(snap=>{
+    const next = [];
+    const arriving = [];
+    snap.forEach(doc=>{
+      const m = { id: doc.id, ...doc.data() };
+      next.push(m);
+      if(knownMessageIds && !knownMessageIds.has(m.id) && m.to === myCharacter) arriving.push(m);
+    });
+    next.reverse();
+    messages = next;
+    const firstLoad = !knownMessageIds;
+    if(firstLoad) knownMessageIds = new Set();
+    messages.forEach(m => knownMessageIds.add(m.id));
+    if(chatConfirmId && !messages.some(m => m.id === chatConfirmId)) chatConfirmId = null;
+
+    renderChat();
+    if(firstLoad || chatPinned){ scrollChatToBottom(); hideNewPill(); }
+    else if(arriving.length) showNewPill();
+    markChatRead();
+    updateChatIndicators();
+    if(arriving.length) announceMessage(arriving[arriving.length - 1], arriving.length);
+  }, e=>console.warn('messages listener failed:', e));
+
+  // "Today" becomes "Yesterday" at midnight
+  setInterval(()=>{ if(chatDayKey(Date.now()) !== lastChatRenderDay) renderChat(); }, 60000);
+}
+
+function chatNearBottom(){
+  const s = document.getElementById('chatScroll');
+  return s.scrollHeight - s.scrollTop - s.clientHeight < CHAT_NEAR_BOTTOM_PX;
+}
+function scrollChatToBottom(smooth){
+  const s = document.getElementById('chatScroll');
+  s.scrollTo({ top: s.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+  chatPinned = true; // also covers the panel being hidden: we'll land at the bottom on the way in
+}
+function showNewPill(){ document.getElementById('chatNewPill').classList.add('show'); }
+function hideNewPill(){ document.getElementById('chatNewPill').classList.remove('show'); }
+
+function onChatTabChange(){
+  if(chatTabActive()){
+    if(chatPinned) scrollChatToBottom();
+    else document.getElementById('chatScroll').scrollTop = chatSavedScrollTop;
+    markChatRead();
+    // on a laptop, land in the composer; on a phone, don't throw the keyboard up uninvited
+    if(window.matchMedia('(hover: hover)').matches) document.getElementById('chatInput').focus({ preventScroll:true });
+  } else {
+    stopMyTyping();
+  }
+  fitChatToViewport();
+}
+
+// Android shrinks the layout for the keyboard (interactive-widget=resizes-content in the viewport
+// meta), so the flex column already keeps the composer above it. iOS Safari only shrinks the
+// visual viewport, so while the chat is open we size the app to that instead.
+function fitChatToViewport(){
+  const vv = window.visualViewport;
+  const app = document.getElementById('app');
+  if(!vv || !app) return;
+  if(chatTabActive() && window.innerHeight - vv.height > 120){
+    app.style.height = vv.height + 'px';
+    window.scrollTo(0, 0);
+    if(chatPinned) scrollChatToBottom();
+  } else if(app.style.height){
+    app.style.height = '';
+  }
+}
+
+function chatJoined(a, b){
+  return !!a && !!b && a.from === b.from && chatDayKey(a.createdAt) === chatDayKey(b.createdAt)
+    && (b.createdAt - a.createdAt) < CHAT_GROUP_MS;
+}
+
+function renderChat(){
+  const list = document.getElementById('chatList');
+  if(!list) return;
+  lastChatRenderDay = chatDayKey(Date.now());
+  if(messages.length === 0){
+    list.innerHTML = knownMessageIds
+      ? `<p class="chat-empty">No messages yet. This is for the small, everyday things.</p>`
+      : '';
+    return;
+  }
+  // "seen" sits under my latest message only while it's still the last word —
+  // once they've replied, it goes without saying.
+  const last = messages[messages.length - 1];
+  const seenId = (last.from === myCharacter && last.readAt) ? last.id : null;
+  let html = '';
+  messages.forEach((m, i)=>{
+    const prev = messages[i - 1], next = messages[i + 1];
+    if(!prev || chatDayKey(prev.createdAt) !== chatDayKey(m.createdAt)){
+      html += `<div class="chat-day">${escapeHtml(chatDayText(m.createdAt))}</div>`;
+    }
+    const mine = m.from === myCharacter;
+    const joinedAbove = chatJoined(prev, m);
+    const joinedBelow = chatJoined(m, next);
+    const cls = ['chat-row', mine ? 'mine' : 'theirs'];
+    cls.push(joinedAbove ? 'joined-above' : 'group-start');
+    if(joinedBelow) cls.push('joined-below');
+    let actions = '';
+    if(mine){
+      actions = chatConfirmId === m.id
+        ? `<div class="chat-actions"><button type="button" class="link-btn danger-link" data-act="confirm-del">delete</button><button type="button" class="link-btn" data-act="keep">keep</button></div>`
+        : `<div class="chat-actions"><button type="button" class="chat-del" data-act="del" title="Delete" aria-label="Delete message">×</button></div>`;
+    }
+    const tint = m.from === 'ruirui' ? 'from-ruirui' : 'from-sisi';
+    html += `<div class="${cls.join(' ')}" data-id="${escapeHtml(m.id)}"><div class="bubble ${tint}">${bodyToHtml(m.text || '')}</div>${actions}</div>`;
+    if(!joinedBelow){
+      let meta = escapeHtml(chatTimeText(m.createdAt));
+      if(m.id === seenId) meta += ' · <span class="seen">seen</span>';
+      html += `<div class="chat-meta ${mine ? 'mine' : 'theirs'}">${meta}</div>`;
+    }
+  });
+  list.innerHTML = html;
+}
+
+function autosizeChatInput(){
+  const input = document.getElementById('chatInput');
+  const max = 101; // four 20px lines + padding + border
+  input.style.height = 'auto';
+  const h = input.scrollHeight + 3;
+  input.style.height = Math.min(h, max) + 'px';
+  input.style.overflowY = h > max ? 'auto' : 'hidden';
+  if(chatPinned) scrollChatToBottom();
+}
+function updateChatComposerState(){
+  const input = document.getElementById('chatInput');
+  document.getElementById('chatSendBtn').disabled = input.value.trim().length === 0;
+  const left = CHAT_MAX - input.value.length;
+  const count = document.getElementById('chatCount');
+  count.textContent = left <= 100 ? left + ' left' : '';
+  count.classList.toggle('near', left <= 20);
+}
+
+function sendChatMessage(){
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim().slice(0, CHAT_MAX);
+  if(!text || !myCharacter) return;
+  input.value = '';
+  autosizeChatInput();
+  updateChatComposerState();
+  stopMyTyping();
+  scrollChatToBottom(); // my own message always comes into view
+  db.collection('messages').add({
+    from: myCharacter,
+    to: otherCharacterKey(),
+    text,
+    createdAt: Date.now(),
+    readAt: null
+  }).catch(e=>{
+    onSyncError(e);
+    // hand it back rather than lose it, unless they've already started typing something else
+    if(!input.value){ input.value = text; autosizeChatInput(); updateChatComposerState(); }
+  });
+}
+
+function markChatRead(){
+  if(!isChatOpen()) return;
+  const unread = unreadMessages();
+  if(!unread.length) return;
+  const wait = 1000 - (Date.now() - lastChatReadWrite);
+  if(wait > 0){
+    if(!chatReadTimer) chatReadTimer = setTimeout(()=>{ chatReadTimer = null; markChatRead(); }, wait);
+    return;
+  }
+  const now = Date.now();
+  lastChatReadWrite = now;
+  const batch = db.batch();
+  unread.forEach(m=>{
+    m.readAt = now; // reflect locally so the badge clears straight away
+    batch.set(db.collection('messages').doc(m.id), { readAt: now }, { merge:true });
+  });
+  batch.commit().catch(onSyncError);
+  updateChatIndicators();
+}
+
+function updateChatIndicators(){
+  const count = unreadMessages().length;
+  const badge = document.getElementById('chatBadge');
+  if(badge){
+    badge.textContent = count > 9 ? '9+' : String(count);
+    badge.classList.toggle('show', count > 0);
+  }
+  const nudge = document.getElementById('chatNudge');
+  if(nudge){
+    const name = escapeHtml(characterLabel(otherCharacterKey()));
+    nudge.classList.toggle('show', count > 0);
+    nudge.innerHTML = count > 0
+      ? `${chatBubbleSvg(otherCharacterKey())}<span>${count === 1 ? 'a new message from ' + name : count + ' new messages from ' + name}</span>`
+      : '';
+  }
+  updateDocumentTitle();
+}
+
+function announceMessage(m, n){
+  const name = characterLabel(m.from);
+  if(!chatTabActive() && !document.hidden){
+    showToast(n > 1 ? `${n} new messages from ${name}` : `${name}: ${chatPreview(m.text, 60)}`);
+  }
+  try{
+    // same permission the letters inbox asks for — one switch covers both
+    if(document.hidden && 'Notification' in window && Notification.permission === 'granted'){
+      new Notification(name, {
+        body: n > 1 ? `${n} new messages` : chatPreview(m.text, 120),
+        tag: 'chat' // a burst replaces itself instead of stacking up
+      });
+    }
+  } catch(e){ console.warn('notification failed:', e); }
+}
+
+// --- deleting (your own messages only) ---
+function beginChatDelete(id){
+  const m = messages.find(x => x.id === id);
+  if(!m || m.from !== myCharacter) return;
+  chatConfirmId = id;
+  chatConfirmAt = Date.now();
+  renderChat();
+  const yes = document.querySelector('#chatList [data-act="confirm-del"]');
+  if(yes) yes.focus({ preventScroll:true });
+}
+function cancelChatDelete(){
+  if(!chatConfirmId) return;
+  chatConfirmId = null;
+  renderChat();
+}
+function deleteChatMessage(id){
+  const m = messages.find(x => x.id === id);
+  chatConfirmId = null;
+  if(!m || m.from !== myCharacter){ renderChat(); return; }
+  messages = messages.filter(x => x.id !== id); // gone locally right away
+  renderChat();
+  updateChatIndicators();
+  db.collection('messages').doc(id).delete().catch(onSyncError);
+}
+function setupChatLongPress(scroller){
+  let timer = null, start = null;
+  const cancel = ()=>{ clearTimeout(timer); timer = null; };
+  scroller.addEventListener('pointerdown', e=>{
+    if(e.pointerType !== 'touch') return;
+    const bubble = e.target.closest('.chat-row.mine .bubble');
+    if(!bubble) return;
+    const id = bubble.parentElement.dataset.id;
+    start = { x: e.clientX, y: e.clientY };
+    cancel();
+    timer = setTimeout(()=>{ timer = null; beginChatDelete(id); }, 500);
+  });
+  scroller.addEventListener('pointermove', e=>{
+    if(timer && start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 8) cancel();
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(t=> scroller.addEventListener(t, cancel));
+  scroller.addEventListener('contextmenu', e=>{
+    if(e.target.closest('.chat-row.mine .bubble') && window.matchMedia('(hover: none)').matches) e.preventDefault();
+  });
+}
+
+// --- typing indicator ---
+function writeTyping(on){
+  if(!myCharacter) return;
+  db.collection('liveState').doc(clientId)
+    .set({ character: myCharacter, typing: on, typingAt: Date.now() }, { merge:true })
+    .catch(onSyncError);
+}
+function noteMyTyping(){
+  const now = Date.now();
+  if(!typingOn || now - lastTypingWrite >= TYPING_WRITE_MS){
+    typingOn = true;
+    lastTypingWrite = now;
+    writeTyping(true);
+  }
+  clearTimeout(typingIdleTimer);
+  typingIdleTimer = setTimeout(stopMyTyping, TYPING_IDLE_MS);
+}
+function stopMyTyping(){
+  clearTimeout(typingIdleTimer);
+  if(!typingOn) return;
+  typingOn = false;
+  lastTypingWrite = 0;
+  writeTyping(false);
+}
+// Called from the liveState listener in setupLiveCursors for every other client's doc.
+// The 5s window is timed from when *we* saw a fresh typingAt, so the two phones' clocks
+// don't have to agree.
+function noteTyping(id, d){
+  if(!d || !d.typing || d.character !== otherCharacterKey()){
+    delete partnerTyping[id];
+  } else if(!partnerTyping[id] || partnerTyping[id].typingAt !== d.typingAt){
+    partnerTyping[id] = { typingAt: d.typingAt, seenAt: Date.now() };
+  }
+  updateTypingIndicator();
+}
+function updateTypingIndicator(){
+  const el = document.getElementById('chatTyping');
+  if(!el) return;
+  let latest = 0;
+  Object.values(partnerTyping).forEach(t=>{ latest = Math.max(latest, t.seenAt); });
+  const remaining = latest ? TYPING_SHOW_MS - (Date.now() - latest) : 0;
+  const show = remaining > 0;
+  if(show) el.textContent = `${characterLabel(otherCharacterKey())} is typing…`;
+  el.classList.toggle('show', show);
+  clearTimeout(typingHideTimer);
+  if(show) typingHideTimer = setTimeout(updateTypingIndicator, remaining + 50);
 }
 
 // ---------- Backup export ----------
@@ -2751,6 +3307,7 @@ function initApp(){
   setupTabs();
   setupJar();
   setupLetters();
+  setupChat();
   initBoard();
   setupPresence();
   setupLiveCursors();
