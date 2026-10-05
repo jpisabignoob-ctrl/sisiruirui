@@ -129,7 +129,8 @@
   .board-viewport.panning{cursor:grabbing;}
   .board-viewport.draw-mode{cursor:none;}
   .board-viewport.erase-mode{cursor:none;}
-  .board-viewport.draw-mode .photo-item, .board-viewport.erase-mode .photo-item{ pointer-events:none; }
+  .board-viewport.draw-mode .photo-item, .board-viewport.erase-mode .photo-item, .board-viewport.fill-mode .photo-item{ pointer-events:none; }
+  .board-viewport.fill-mode{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M9 3 L18 12 L11 19 L3 11 Z' fill='white' stroke='%232B2A30' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M3 11 L18 12' stroke='%232B2A30' stroke-width='1.2'/%3E%3Cpath d='M19 13 Q22 17 20.5 19.5 Q19 21 17.8 19.2 Q17 17.5 19 13 Z' fill='%23F2A6C0' stroke='%232B2A30' stroke-width='1'/%3E%3C/svg%3E") 19 20, crosshair;}
   .board-world{position:absolute;left:0;top:0;transform-origin:0 0;}
   #photos-layer{position:absolute;left:0;top:0;}
   #stroke-svg{z-index:999999;}
@@ -214,12 +215,13 @@
   .page-tab.add{color:var(--pink-dark);font-size:16px;}
 
   .toolbar{
-    position:absolute;bottom:18px;left:50%;transform:translateX(-50%);
+    /* left+right+margin:auto with width:max-content centres it without the left:50% shrink-to-half-width trap */
+    position:absolute;bottom:18px;left:12px;right:12px;margin:0 auto;width:max-content;
     display:flex;align-items:center;gap:6px;
     background:var(--white);border:1px solid var(--border);
     box-shadow:0 10px 26px rgba(0,0,0,0.10);
     border-radius:999px;padding:8px;z-index:4;
-    max-width:calc(100vw - 24px);flex-wrap:wrap;justify-content:center;
+    max-width:calc(100vw - 24px);box-sizing:border-box;flex-wrap:wrap;justify-content:center;
   }
   .toolbar button{
     background:none;border:none;width:40px;height:40px;border-radius:50%;
@@ -232,7 +234,7 @@
   .toolbar .zoom-label{font-size:12px;color:var(--gray);padding:0 8px;min-width:44px;text-align:center;flex:0 0 auto;}
   .toolbar .divider{width:1px;height:22px;background:var(--border);margin:0 2px;flex:0 0 auto;}
 
-  .color-picker-wrap, .eraser-picker-wrap{position:relative;flex:0 0 auto;}
+  .color-picker-wrap, .eraser-picker-wrap, .photo-picker-wrap{position:relative;flex:0 0 auto;}
   .color-swatch-btn{
     width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;
     background:#F2A6C0;box-shadow:inset 0 0 0 2px rgba(255,255,255,0.6);
@@ -272,6 +274,21 @@
   .eraser-popover input[type="range"], .size-row input[type="range"]{width:100%;accent-color:var(--pink);}
   .eraser-popover .size-label, .size-row .size-label{font-size:12px;color:var(--gray);margin-top:4px;display:block;}
   .size-row{border-top:1px solid var(--border);padding-top:10px;margin-top:10px;text-align:center;}
+
+  /* 📷 popover: upload / paste. Anchored to the button's left edge (not centred) since 📷 is the
+     leftmost tool and a centred popover would hang off the left of a phone screen. */
+  .photo-popover{
+    display:none;position:absolute;bottom:calc(100% + 12px);left:-4px;
+    background:var(--white);border:1px solid var(--border);border-radius:16px;
+    box-shadow:0 10px 26px rgba(0,0,0,0.14);padding:6px;width:max-content;
+  }
+  .photo-popover.open{display:flex;flex-direction:column;gap:2px;}
+  .toolbar .photo-option-btn{
+    width:auto;height:auto;border-radius:10px;justify-content:flex-start;gap:8px;
+    padding:9px 12px;font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;
+  }
+  .toolbar .photo-option-btn:hover{background:var(--pink-light);}
+  .board-viewport.drop-target{outline:2px dashed var(--pink);outline-offset:-8px;}
 
   .sync-note{
     position:absolute;top:14px;left:50%;transform:translateX(-50%);
@@ -395,6 +412,24 @@
     font-size:12.5px;font-weight:600;padding:9px 18px;border-radius:999px;cursor:pointer;
   }
   .backup-btn:hover{border-color:var(--pink);color:var(--pink-dark);}
+  .restore-link{
+    margin-top:8px;background:none;border:none;color:var(--gray);font-size:11.5px;
+    text-decoration:underline;text-underline-offset:2px;cursor:pointer;padding:4px 8px;opacity:.8;
+  }
+  .restore-link:hover{color:var(--pink-dark);opacity:1;}
+  .restore-confirm{
+    margin-top:10px;max-width:320px;background:var(--pink-light);color:var(--ink);
+    border-radius:14px;padding:12px 14px;font-size:13px;line-height:1.5;
+  }
+  .restore-confirm[hidden]{display:none;}
+  .restore-confirm p{margin:0 0 10px;}
+  .restore-actions{display:flex;gap:8px;justify-content:center;}
+  .restore-actions button{
+    border-radius:999px;font-size:12.5px;font-weight:600;padding:7px 16px;cursor:pointer;
+    border:1px solid var(--border);background:var(--white);color:var(--gray);
+  }
+  .restore-actions .restore-go{background:var(--pink);border-color:var(--pink);color:#fff;}
+  .restore-actions button:disabled{opacity:.6;cursor:default;}
   @media (prefers-reduced-motion: reduce){
     .timer-box.seconds .timer-num{animation:none;}
   }
@@ -414,6 +449,12 @@
   @media (max-width:520px){
     .card{padding:34px 24px;}
     .toolbar button{width:36px;height:36px;font-size:15px;}
+    /* one row on a ~390px phone: 32px tools, no dividers; still wraps (tidily) on narrower screens */
+    .toolbar{border-radius:24px;gap:2px;padding:5px;}
+    .toolbar button{width:32px;height:32px;}
+    .toolbar .divider{display:none;}
+    .toolbar .zoom-label{padding:0 2px;min-width:36px;font-size:11px;}
+    .toolbar .photo-option-btn{width:auto;height:auto;font-size:13px;}
   }
 
   /* ---------- LETTERS ---------- */
@@ -751,6 +792,7 @@
         <div class="board-panel">
           <div class="board-viewport" id="viewport">
             <div class="board-world" id="world">
+              <svg id="fill-svg" width="1" height="1" style="position:absolute;left:0;top:0;overflow:visible;pointer-events:none;"></svg>
               <div id="photos-layer"></div>
               <svg id="stroke-svg" width="1" height="1" style="position:absolute;left:0;top:0;overflow:visible;pointer-events:none;"></svg>
               <div id="cursors-layer"></div>
@@ -762,10 +804,17 @@
           <div class="page-tabs" id="pageTabs"></div>
           <div class="sync-note" id="syncNote" style="display:none;">saved only for this session</div>
           <div class="toolbar">
-            <button id="addPhotoBtn" title="Add photo">📷</button>
+            <div class="photo-picker-wrap">
+              <button id="addPhotoBtn" title="Add photo">📷</button>
+              <div class="photo-popover" id="photoPopover">
+                <button class="photo-option-btn" id="uploadPhotoOption">🖼️ upload photo</button>
+                <button class="photo-option-btn" id="pasteImageOption">📋 paste image</button>
+              </div>
+            </div>
             <div class="divider"></div>
             <button id="pointerBtn" class="active" title="Pointer (move photos)">🖱️</button>
             <button id="penBtn" title="Draw">✏️</button>
+            <button id="fillBtn" title="Fill">🪣</button>
             <div class="color-picker-wrap">
               <button id="colorBtn" class="color-swatch-btn" title="Pen color"></button>
               <div class="color-popover" id="colorPopover">
@@ -963,6 +1012,15 @@
           </div>
 
           <button class="backup-btn" id="backupBtn">⬇ Download a backup</button>
+          <button class="restore-link" id="restoreBtn" type="button">restore from backup</button>
+          <input type="file" id="restoreInput" accept=".json,application/json" hidden>
+          <div class="restore-confirm" id="restoreConfirm" hidden>
+            <p id="restoreText"></p>
+            <div class="restore-actions">
+              <button class="restore-go" id="restoreGoBtn" type="button">add them</button>
+              <button class="restore-cancel" id="restoreCancelBtn" type="button">cancel</button>
+            </div>
+          </div>
         </div>
       </section>
     </main>
@@ -1262,14 +1320,18 @@ function showToast(msg){
 // Every Firestore *write* funnels its failure here so the user finds out something
 // didn't save, without a toast firing on every single throttled write in a bad patch
 // of connectivity (at most one every 30s).
-let lastSyncErrorToastAt = 0;
-function onSyncError(e){
-  console.warn('sync failed:', e);
+// The 30s throttle is per message, so a different kind of failure still gets its own toast.
+const syncToastAt = {};
+function notifyThrottled(msg){
   const now = Date.now();
-  if(now - lastSyncErrorToastAt > 30000){
-    lastSyncErrorToastAt = now;
-    showToast("couldn't sync that — check your connection");
+  if(now - (syncToastAt[msg] || 0) > 30000){
+    syncToastAt[msg] = now;
+    showToast(msg);
   }
+}
+function onSyncError(e, context){
+  console.warn('sync failed:', e);
+  notifyThrottled(syncErrorMessage(e, typeof context === 'string' ? context : ''));
 }
 
 let notes = [];
@@ -1409,8 +1471,148 @@ async function safeSet(key, value, shared){
   try{
     await db.collection('boardData').doc(key).set({ value });
     return { key, value, shared: true };
-  } catch(e){ storageOK = false; onSyncError(e); return null; }
+  } catch(e){ storageOK = false; onSyncError(e, key.startsWith('photo-') ? 'photo' : 'board'); return null; }
 }
+
+// storage-core start (pure functions: no DOM, no Firestore — the test harness extracts this block)
+// Board storage layout (v2):
+//   boardData/board-index        { value: '{"v":2,"order":["page-1","page-…"]}' }   — page list only
+//   boardData/page-<pageId>      { value: JSON of one page {id, photos, strokes, fills} }
+//   boardData/photo-<photoId>    { value: the image data URL }                         — unchanged
+// v1 kept every page inline in board-index, which hits Firestore's 1 MiB per-document cap at
+// roughly 150 strokes. Stroke points are now [x,y] pairs rounded to 0.1 and simplified when a
+// stroke is finished; older {x,y} points are converted (and simplified once) when they load.
+// The index uses "order", not "pages", on purpose: a tab still running the old code ignores it
+// and keeps what it already has in memory, so it can still download a backup.
+// BOTH devices must reload onto this version: an old tab that manages to save would put a v1
+// index back (it then gets migrated again, merged with the page docs, so nothing is lost, but
+// pages added since could drop out of the list until re-added from a backup).
+const PAGE_WARN_BYTES = 800000;   // "this page is nearly full"
+const PAGE_MAX_BYTES = 1000000;   // don't even try: Firestore's cap is 1,048,576 bytes per document
+const STROKE_EPS = 0.5;           // simplification tolerance in world units — visually lossless
+function r1(v){ return Math.round(v*10)/10; }
+function pageDocId(pageId){ return 'page-' + pageId; }
+function validPageId(id){ return typeof id === 'string' && /^[A-Za-z0-9_.-]{1,200}$/.test(id); }
+// one point in either format → [x, y] rounded to 0.1, or null if it isn't a usable point
+function normPoint(p){
+  if(!p) return null;
+  const x = Array.isArray(p) ? p[0] : p.x, y = Array.isArray(p) ? p[1] : p.y;
+  if(typeof x !== 'number' || typeof y !== 'number' || !isFinite(x) || !isFinite(y)) return null;
+  return [r1(x), r1(y)];
+}
+// Ramer–Douglas–Peucker on an open polyline of [x,y] (iterative); always keeps both endpoints
+function simplifyPolyline(pts, eps){
+  const n = pts.length;
+  if(n <= 2) return pts.slice();
+  const keep = new Uint8Array(n); keep[0] = 1; keep[n-1] = 1;
+  const stack = [[0, n-1]];
+  while(stack.length){
+    const [a, b] = stack.pop();
+    if(b - a < 2) continue;
+    const A = pts[a], B = pts[b], dx = B[0]-A[0], dy = B[1]-A[1], len = Math.hypot(dx, dy);
+    let md = -1, mi = -1;
+    for(let i=a+1;i<b;i++){
+      const P = pts[i];
+      const d = len ? Math.abs(dy*(P[0]-A[0]) - dx*(P[1]-A[1]))/len : Math.hypot(P[0]-A[0], P[1]-A[1]);
+      if(d > md){ md = d; mi = i; }
+    }
+    if(md > eps){ keep[mi] = 1; stack.push([a, mi], [mi, b]); }
+  }
+  const out = [];
+  for(let i=0;i<n;i++) if(keep[i]) out.push(pts[i]);
+  return out;
+}
+// A stroke whose points are already [x,y] pairs is returned as-is (same object). Old {x,y}
+// strokes come back as a new object with rounded, simplified pairs. A stroke is never dropped.
+function normalizeStroke(s){
+  if(!s || !Array.isArray(s.points)) return s ? { ...s, points: [] } : s;
+  if(s.points.every(p => Array.isArray(p))) return s;
+  const pts = s.points.map(normPoint).filter(Boolean);
+  return { ...s, points: simplifyPolyline(pts, STROKE_EPS) };
+}
+// A page in any historical shape → { id, photos, strokes, fills, ...anything else it carried }
+function normalizePage(p){
+  const page = { ...(p || {}) };
+  page.photos = Array.isArray(page.photos) ? page.photos : [];
+  page.strokes = Array.isArray(page.strokes) ? page.strokes.map(normalizeStroke) : [];
+  page.fills = Array.isArray(page.fills) ? page.fills : [];
+  return page;
+}
+function itemKey(it){ return (it && it.id) ? 'id:' + it.id : 'json:' + JSON.stringify(it); }
+function hasContent(p){ return !!p && ((p.strokes||[]).length + (p.fills||[]).length + (p.photos||[]).length) > 0; }
+// Union of two versions of the same page: everything in `base` (same objects, same order),
+// plus whatever `extra` has that base doesn't (matched by id). Never removes anything.
+function mergePages(base, extra){
+  const out = { ...extra, ...base };
+  const added = { strokes:0, fills:0, photos:0 };
+  for(const k of ['strokes', 'fills', 'photos']){
+    const list = (base[k] || []).slice();
+    const seen = new Set(list.map(itemKey));
+    for(const it of (extra[k] || [])){
+      const key = itemKey(it);
+      if(!seen.has(key)){ seen.add(key); list.push(it); added[k]++; }
+    }
+    out[k] = list;
+  }
+  return { page: out, added };
+}
+// UTF-8 byte length without allocating (Firestore's limit is in bytes)
+function utf8Len(s){
+  let n = 0;
+  for(let i=0;i<s.length;i++){
+    const c = s.charCodeAt(i);
+    if(c < 0x80) n += 1;
+    else if(c < 0x800) n += 2;
+    else if(c >= 0xD800 && c <= 0xDBFF){ n += 4; i++; }
+    else n += 3;
+  }
+  return n;
+}
+function pageSizeStatus(bytes){ return bytes > PAGE_MAX_BYTES ? 'full' : bytes > PAGE_WARN_BYTES ? 'warn' : 'ok'; }
+// board-index value → { kind:'v2', order } | { kind:'v1', pages } | { kind:'empty' } | { kind:'bad' }
+function parseIndex(value){
+  let parsed;
+  try{ parsed = JSON.parse(value); } catch(e){ return { kind:'bad' }; }
+  if(!parsed || typeof parsed !== 'object') return { kind:'bad' };
+  if(parsed.v === 2 && Array.isArray(parsed.order)) return { kind:'v2', order: parsed.order.filter(validPageId) };
+  if(Array.isArray(parsed.pages) && parsed.pages.length) return { kind:'v1', pages: parsed.pages };
+  if(parsed.photos || parsed.strokes) return { kind:'v1', pages: [{ id:'page-1', photos: parsed.photos||[], strokes: parsed.strokes||[] }] };
+  return { kind:'empty' };
+}
+// What a backup would add: per backup page, only the strokes/fills/photos (by id) the board lacks.
+function planRestore(backup, current){
+  const plan = { pages: [], strokes:0, fills:0, photos:0, newPages:0 };
+  if(!backup || !Array.isArray(backup.pages)) return null;
+  const used = new Set();
+  for(const raw of backup.pages){
+    if(!raw || typeof raw !== 'object') continue;
+    const bp = normalizePage(raw);
+    if(!validPageId(bp.id) || used.has(bp.id)) continue;
+    used.add(bp.id);
+    const local = current.find(p => p.id === bp.id);
+    const have = k => new Set(local ? (local[k]||[]).map(itemKey) : []);
+    const add = {};
+    for(const k of ['strokes', 'fills', 'photos']){ const h = have(k); add[k] = bp[k].filter(it => !h.has(itemKey(it))); }
+    if(!local && !hasContent(bp)) continue;
+    if(!add.strokes.length && !add.fills.length && !add.photos.length && local) continue;
+    plan.pages.push({ id: bp.id, isNew: !local, add });
+    plan.strokes += add.strokes.length; plan.fills += add.fills.length; plan.photos += add.photos.length;
+    if(!local) plan.newPages++;
+  }
+  return plan;
+}
+// One honest message per kind of failure, so the next "it won't save" report says why.
+function syncErrorMessage(e, context){
+  const code = String((e && e.code) || '').replace(/^firestore\//, '');
+  const msg = String((e && e.message) || '');
+  if(code === 'permission-denied') return 'the database refused that save — the Firebase rules need updating';
+  if(code === 'resource-exhausted') return 'the free daily limit was reached — saving resumes tomorrow';
+  if(code === 'page-too-big' || (code === 'invalid-argument' && /size|exceed|too large|too big|maximum|bytes/i.test(msg))){
+    return context === 'photo' ? 'that photo was too big to sync — try a smaller one' : 'this page is full — start a new page with +';
+  }
+  return "couldn't sync that — check your connection";
+}
+// storage-core end
 async function safeDelete(key, shared){
   try{
     await db.collection('boardData').doc(key).delete();
@@ -1419,7 +1621,7 @@ async function safeDelete(key, shared){
 }
 
 // ---------- Board state ----------
-let pages = [ { id:'page-1', photos: [], strokes: [] } ];
+let pages = [ { id:'page-1', photos: [], strokes: [], fills: [] } ];
 let currentPage = 0;
 let boardState = pages[0];
 let photoCache = {}; // id -> dataURL
@@ -1427,13 +1629,14 @@ let zCounter = 1;
 let panX=0, panY=0, zoom=1;
 const MIN_ZOOM=0.05, MAX_ZOOM=4;
 
-let viewport, world, svg, photosLayer, eraserCursorEl, penCursorEl, cursorsLayer;
+let viewport, world, svg, fillSvg, photosLayer, eraserCursorEl, penCursorEl, cursorsLayer;
 let lastLiveWrite = 0;
 let lastLiveBroadcastPos = null; // last world point we broadcast, to skip sub-pixel/idle moves
 let tabHidden = document.hidden;
 let otherCursors = {};
 let isDrawMode=false;
 let isEraserMode=false;
+let isFillMode=false;
 let currentPenColor='#F2A6C0';
 let penSize=3;
 let eraserRadius=20;
@@ -1637,7 +1840,7 @@ function renderPhoto(meta, src){
 
   el.addEventListener('pointerdown', (e)=>{
     if(e.button === 2) return; // right-click bubbles up so the board can still be panned
-    if(isDrawMode || isEraserMode){
+    if(isDrawMode || isEraserMode || isFillMode){
       e.stopPropagation(); // stop it here, then hand off directly to drawing — don't let it leak into a board pan
       startInteraction(e);
       return;
@@ -1689,31 +1892,44 @@ function renderStroke(stroke){
   svg.appendChild(path);
   return path;
 }
+// accepts both point formats: [x,y] (current) and {x,y} (older strokes / an old partner's live preview)
 function pointsToPath(points){
-  if(points.length===0) return '';
+  if(!points || points.length===0) return '';
+  const xy = p => `${(+ptX(p)).toFixed(1)} ${(+ptY(p)).toFixed(1)}`;
   if(points.length===1){
-    const p = points[0];
     // a lone point needs a zero-length segment to actually render as a dot with round linecap
-    return `M ${p.x.toFixed(1)} ${p.y.toFixed(1)} L ${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
+    return `M ${xy(points[0])} L ${xy(points[0])}`;
   }
-  return 'M ' + points.map(p=>`${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' L ');
+  return 'M ' + points.map(xy).join(' L ');
 }
 function eraseAt(worldPt){
   const threshold = eraserRadius;
   let changed = false;
   for(let i=boardState.strokes.length-1;i>=0;i--){
     const s = boardState.strokes[i];
-    for(const p of s.points){
-      if(Math.hypot(p.x-worldPt.x, p.y-worldPt.y) < threshold){
-        const el = svg.querySelector(`path[data-id="${s.id}"]`);
-        if(el) el.remove();
-        boardState.strokes.splice(i,1);
-        changed = true;
-        break;
-      }
+    if(strokeNear(s.points || [], worldPt, threshold)){
+      const el = svg.querySelector(`path[data-id="${s.id}"]`);
+      if(el) el.remove();
+      boardState.strokes.splice(i,1);
+      changed = true;
     }
   }
   return changed;
+}
+// Distance to the stroke's segments, not just its points: simplified strokes keep few points
+// along straight runs, so the middle of a line has no point near it.
+function strokeNear(points, c, r){
+  const n = points.length;
+  if(!n) return false;
+  if(n === 1) return Math.hypot(ptX(points[0])-c.x, ptY(points[0])-c.y) < r;
+  for(let i=1;i<n;i++){
+    const ax = ptX(points[i-1]), ay = ptY(points[i-1]), dx = ptX(points[i])-ax, dy = ptY(points[i])-ay;
+    const L = dx*dx + dy*dy;
+    let t = L ? ((c.x-ax)*dx + (c.y-ay)*dy)/L : 0;
+    t = t < 0 ? 0 : t > 1 ? 1 : t;
+    if(Math.hypot(ax+t*dx-c.x, ay+t*dy-c.y) < r) return true;
+  }
+  return false;
 }
 function segmentCircleIntersections(A, B, C, r){
   const d = { x:B.x-A.x, y:B.y-A.y };
@@ -1733,9 +1949,14 @@ function segmentCircleIntersections(A, B, C, r){
   results.sort((p,q)=>p.t-q.t);
   return results;
 }
+// Points may be [x,y] or {x,y}; the runs it returns mix the stroke's own points with new
+// intersection points as [x,y] — eraseAtPrecise normalises each run to [x,y] pairs.
 function clipStrokeOutsideCircle(points, center, radius){
   const r2 = radius*radius;
-  const isInside = p => (p.x-center.x)**2 + (p.y-center.y)**2 < r2;
+  const isInside = p => (ptX(p)-center.x)**2 + (ptY(p)-center.y)**2 < r2;
+  const obj = p => ({ x:ptX(p), y:ptY(p) });
+  const arr = p => [p.x, p.y];
+  const cross = (a, b)=> segmentCircleIntersections(obj(a), obj(b), center, radius);
   if(points.length === 0) return { runs:[], changed:false };
   if(points.length === 1){
     return isInside(points[0]) ? { runs:[], changed:true } : { runs:[points], changed:false };
@@ -1751,24 +1972,24 @@ function clipStrokeOutsideCircle(points, center, radius){
     const prev = points[i-1], p = points[i];
     const prevInside = isInside(prev), inside = isInside(p);
     if(!prevInside && !inside){
-      const ix = segmentCircleIntersections(prev, p, center, radius);
+      const ix = cross(prev, p);
       if(ix.length === 2){
         changed = true;
-        current.push(ix[0].point);
+        current.push(arr(ix[0].point));
         endRun();
-        current = [ix[1].point, p];
+        current = [arr(ix[1].point), p];
       } else {
         current.push(p);
       }
     } else if(prevInside && !inside){
       changed = true;
-      const ix = segmentCircleIntersections(prev, p, center, radius);
-      const exitPt = ix.length ? ix[ix.length-1].point : p;
+      const ix = cross(prev, p);
+      const exitPt = ix.length ? arr(ix[ix.length-1].point) : p;
       current = [exitPt, p];
     } else if(!prevInside && inside){
       changed = true;
-      const ix = segmentCircleIntersections(prev, p, center, radius);
-      const enterPt = ix.length ? ix[0].point : prev;
+      const ix = cross(prev, p);
+      const enterPt = ix.length ? arr(ix[0].point) : prev;
       current.push(enterPt);
       endRun();
     } else {
@@ -1782,7 +2003,7 @@ function eraseAtPrecise(worldPt){
   let changed = false;
   const result = [];
   for(const stroke of boardState.strokes){
-    const { runs, changed: strokeChanged } = clipStrokeOutsideCircle(stroke.points, worldPt, eraserRadius);
+    const { runs, changed: strokeChanged } = clipStrokeOutsideCircle(stroke.points || [], worldPt, eraserRadius);
     if(!strokeChanged){
       result.push(stroke);
       continue;
@@ -1791,7 +2012,7 @@ function eraseAtPrecise(worldPt){
     const oldEl = svg.querySelector(`path[data-id="${stroke.id}"]`);
     if(oldEl) oldEl.remove();
     runs.forEach(runPoints=>{
-      const piece = { id:'s'+Date.now()+Math.random().toString(36).slice(2)+result.length, color:stroke.color, width:stroke.width, points:runPoints };
+      const piece = { id:'s'+Date.now()+Math.random().toString(36).slice(2)+result.length, color:stroke.color, width:stroke.width, points:runPoints.map(normPoint).filter(Boolean) };
       result.push(piece);
       renderStroke(piece);
     });
@@ -1801,7 +2022,307 @@ function eraseAtPrecise(worldPt){
 }
 function performErase(worldPt){
   const changed = eraserPreciseMode ? eraseAtPrecise(worldPt) : eraseAt(worldPt);
-  if(changed) throttledSaveIndex();
+  // Fills only go when the eraser isn't touching a line, so rubbing out an outline doesn't also
+  // wipe the colour tucked under it. Both eraser modes remove a fill whole.
+  const fillChanged = !changed && eraseFillAt(worldPt);
+  if(changed || fillChanged) throttledSaveIndex();
+}
+
+// ---------- Paint bucket ----------
+// fill-core start (pure functions: no DOM, no globals — the test harness extracts this block)
+const FILL_BASE_WORLD = 1500, FILL_MAX_PX = 1600;
+// Stroke point accessors: [x,y] (current format) or {x,y} (older strokes). Used everywhere points are read.
+function ptX(p){ return Array.isArray(p) ? p[0] : p.x; }
+function ptY(p){ return Array.isArray(p) ? p[1] : p.y; }
+// Rasterise every stroke near `click` as a barrier, flood-fill from the click, then trace the
+// region back into world-space polygons. Returns { status:'ok'|'open'|'onStroke', ... }.
+function computeFillRegion(strokes, click, zoom){
+  let worldSize = FILL_BASE_WORLD / Math.min(1, zoom || 1); // wider, coarser window when zoomed out
+  for(let attempt=0; attempt<2; attempt++){
+    const res = fillAttempt(strokes, click, worldSize);
+    if(res.status !== 'open') return res;
+    worldSize *= 2;
+  }
+  return { status:'open' };
+}
+function fillAttempt(strokes, click, worldSize){
+  const s = Math.min(1, FILL_MAX_PX / worldSize); // raster px per world unit
+  const W = Math.ceil(worldSize*s), H = W;
+  const ox = click.x - worldSize/2, oy = click.y - worldSize/2;
+  const barrier = new Uint8Array(W*H);
+  let minR = Infinity;
+  for(const st of strokes){
+    const pts = st.points; if(!pts || !pts.length) continue;
+    // +0.5px radius (1px on the width) seals hairline gaps; 0.75 floor keeps thin lines 4-connected
+    const r = Math.max(0.75, (st.width||1)/2*s + 0.5), r2 = r*r;
+    let bx0=Infinity, by0=Infinity, bx1=-Infinity, by1=-Infinity;
+    for(const p of pts){ const px=ptX(p), py=ptY(p); if(px<bx0) bx0=px; if(px>bx1) bx1=px; if(py<by0) by0=py; if(py>by1) by1=py; }
+    if((bx1-ox)*s < -r || (bx0-ox)*s > W+r || (by1-oy)*s < -r || (by0-oy)*s > H+r) continue;
+    if(r < minR) minR = r;
+    for(let i=0;i<pts.length;i++){
+      const a = pts[i], b = pts[Math.min(i+1, pts.length-1)];
+      if(i>0 && i===pts.length-1) break; // last point is covered as the previous segment's end
+      const ax=(ptX(a)-ox)*s, ay=(ptY(a)-oy)*s, bxp=(ptX(b)-ox)*s, byp=(ptY(b)-oy)*s;
+      const x0 = Math.max(0, Math.floor(Math.min(ax,bxp)-r)), x1 = Math.min(W-1, Math.ceil(Math.max(ax,bxp)+r));
+      const y0 = Math.max(0, Math.floor(Math.min(ay,byp)-r)), y1 = Math.min(H-1, Math.ceil(Math.max(ay,byp)+r));
+      if(x0>x1 || y0>y1) continue;
+      const dx=bxp-ax, dy=byp-ay, len2=dx*dx+dy*dy;
+      for(let y=y0;y<=y1;y++){
+        const py=y+0.5;
+        for(let x=x0;x<=x1;x++){
+          const px=x+0.5;
+          let t = len2 ? ((px-ax)*dx+(py-ay)*dy)/len2 : 0;
+          t = t<0 ? 0 : t>1 ? 1 : t;
+          const ex=ax+t*dx-px, ey=ay+t*dy-py;
+          if(ex*ex+ey*ey <= r2) barrier[y*W+x] = 1;
+        }
+      }
+    }
+  }
+  const cx = Math.floor((click.x-ox)*s), cy = Math.floor((click.y-oy)*s);
+  if(barrier[cy*W+cx]) return { status:'onStroke' };
+
+  // scanline flood fill over non-barrier pixels (4-connected); bail as soon as it hits the window edge
+  const mask = new Uint8Array(W*H);
+  let mnx=cx, mxx=cx, mny=cy, mxy=cy;
+  const stack = [cx, cy];
+  while(stack.length){
+    const y = stack.pop(), x0 = stack.pop();
+    let row = y*W;
+    if(mask[row+x0] || barrier[row+x0]) continue;
+    let l = x0, rr = x0;
+    while(l>0 && !barrier[row+l-1] && !mask[row+l-1]) l--;
+    while(rr<W-1 && !barrier[row+rr+1] && !mask[row+rr+1]) rr++;
+    if(l===0 || rr===W-1 || y===0 || y===H-1) return { status:'open' };
+    for(let x=l;x<=rr;x++) mask[row+x] = 1;
+    if(l<mnx) mnx=l; if(rr>mxx) mxx=rr; if(y<mny) mny=y; if(y>mxy) mxy=y;
+    for(const ny of [y-1, y+1]){
+      const nrow = ny*W;
+      let inRun = false;
+      for(let x=l;x<=rr;x++){
+        const open = !barrier[nrow+x] && !mask[nrow+x];
+        if(open && !inRun){ stack.push(x, ny); inRun = true; }
+        else if(!open) inRun = false;
+      }
+    }
+  }
+
+  // dilate into the barrier only (never across it into a neighbouring region) so the fill tucks
+  // under the lines; 2px when every nearby line is thick enough to hide it, else 1px
+  const D = minR >= 1.25 ? 2 : 1; // 2px only where it can't poke out past a thin line's far edge
+  for(let k=1;k<=D;k++){
+    const add = [];
+    const ya = Math.max(1,mny-1), yb = Math.min(H-2,mxy+1), xa = Math.max(1,mnx-1), xb = Math.min(W-2,mxx+1);
+    for(let y=ya;y<=yb;y++) for(let x=xa;x<=xb;x++){
+      const i=y*W+x;
+      if(mask[i] || !barrier[i]) continue;
+      if(mask[i-1]===k || mask[i+1]===k || mask[i-W]===k || mask[i+W]===k) add.push(i);
+    }
+    for(const i of add) mask[i] = k+1;
+    mnx=xa; mxx=xb; mny=ya; mxy=yb;
+  }
+  for(let i=0;i<mask.length;i++) if(mask[i]) mask[i]=1;
+
+  // holes: non-mask pixels inside the bbox that the outside can't reach (8-connected). A hole that
+  // is nothing but line pixels (a scribble inside the region) is absorbed — the line covers it anyway.
+  const bx0=mnx-1, bx1=mxx+1, by0=mny-1, by1=mxy+1;
+  const seen = new Uint8Array(W*H); // 1 = outside, 2 = hole
+  const flood8 = (sx, sy, tag, onPix)=>{
+    const st = [sx, sy]; seen[sy*W+sx] = tag;
+    while(st.length){
+      const y = st.pop(), x = st.pop();
+      onPix(x, y);
+      for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){
+        const nx=x+dx, ny=y+dy;
+        if(nx<bx0||nx>bx1||ny<by0||ny>by1) continue;
+        const j=ny*W+nx;
+        if(mask[j] || seen[j]) continue;
+        seen[j]=tag; st.push(nx, ny);
+      }
+    }
+  };
+  for(let x=bx0;x<=bx1;x++) for(const y of [by0,by1]) if(!mask[y*W+x] && !seen[y*W+x]) flood8(x, y, 1, ()=>{});
+  for(let y=by0;y<=by1;y++) for(const x of [bx0,bx1]) if(!mask[y*W+x] && !seen[y*W+x]) flood8(x, y, 1, ()=>{});
+  const holeSamples = [];
+  for(let y=by0;y<=by1;y++) for(let x=bx0;x<=bx1;x++){
+    const i=y*W+x;
+    if(mask[i] || seen[i]) continue;
+    const pix = []; let sample = null;
+    flood8(x, y, 2, (px,py)=>{ pix.push(py*W+px); if(!sample && !barrier[py*W+px]) sample = [px,py]; });
+    if(!sample) for(const j of pix) mask[j] = 1;
+    else holeSamples.push({ x: ox+(sample[0]+0.5)/s, y: oy+(sample[1]+0.5)/s });
+  }
+
+  // trace pixel-edge boundaries: each edge has the mask on its right (y-down); at a saddle turn right
+  // so diagonal-only neighbours stay separate. Outer loops come out with positive area, holes negative.
+  const BW = bx1-bx0+1, VW = BW+1, BH = by1-by0+1;
+  const isM = (x,y)=> x>=bx0 && x<=bx1 && y>=by0 && y<=by1 && mask[y*W+x]===1;
+  const out = new Uint8Array(VW*(BH+1)), used = new Uint8Array(VW*(BH+1));
+  const DX=[1,0,-1,0], DY=[0,1,0,-1];
+  for(let y=by0;y<=by1;y++) for(let x=bx0;x<=bx1;x++){
+    if(!isM(x,y)) continue;
+    const lx=x-bx0, ly=y-by0;
+    if(!isM(x,y-1)) out[ly*VW+lx] |= 1;
+    if(!isM(x+1,y)) out[ly*VW+lx+1] |= 2;
+    if(!isM(x,y+1)) out[(ly+1)*VW+lx+1] |= 4;
+    if(!isM(x-1,y)) out[(ly+1)*VW+lx] |= 8;
+  }
+  const loops = [];
+  for(let v=0; v<out.length; v++){
+    while(out[v] & ~used[v]){
+      const free = out[v] & ~used[v];
+      const d0 = free&1 ? 0 : free&2 ? 1 : free&4 ? 2 : 3;
+      const pts = [];
+      let cur=v, d=d0, prev=-1, guard=0;
+      do{
+        used[cur] |= 1<<d;
+        if(d!==prev) pts.push([cur%VW, (cur/VW)|0]);
+        prev = d;
+        cur = cur + DX[d] + DY[d]*VW;
+        const o = out[cur], rt=(d+1)&3, lt=(d+3)&3;
+        d = (o>>rt)&1 ? rt : (o>>d)&1 ? d : lt;
+      } while(!(cur===v && d===d0) && ++guard < 4*out.length);
+      let area = 0;
+      for(let i=0;i<pts.length;i++){ const a=pts[i], b=pts[(i+1)%pts.length]; area += a[0]*b[1]-b[0]*a[1]; }
+      loops.push({ pts, area: area/2 });
+    }
+  }
+  const toWorld = ring => ring.map(p=>[ Math.round((ox+(p[0]+bx0)/s)*10)/10, Math.round((oy+(p[1]+by0)/s)*10)/10 ]);
+  let outer = null;
+  const holes = [];
+  for(const L of loops){
+    if(L.area > 0){ if(!outer || L.area > outer.area) outer = L; }
+    else {
+      const simp = simplifyClosedRing(L.pts, 1);
+      if(simp.length >= 3) holes.push(toWorld(simp));
+    }
+  }
+  if(!outer) return { status:'onStroke' };
+  const points = toWorld(simplifyClosedRing(outer.pts, 1));
+  return { status:'ok', points, holes, holeSamples, mask, W, H, ox, oy, s };
+}
+// Ramer–Douglas–Peucker on a closed ring (iterative), split at vertex 0 and the vertex farthest from it
+function simplifyClosedRing(ring, eps){
+  const n = ring.length;
+  if(n <= 4) return ring.slice();
+  let far = 0, best = -1;
+  for(let i=1;i<n;i++){ const d=(ring[i][0]-ring[0][0])**2+(ring[i][1]-ring[0][1])**2; if(d>best){ best=d; far=i; } }
+  const keep = new Uint8Array(n); keep[0]=1; keep[far]=1;
+  const idx = i => ring[i % n];
+  const stack = [[0, far], [far, n]];
+  while(stack.length){
+    const [a, b] = stack.pop();
+    if(b - a < 2) continue;
+    const A = idx(a), B = idx(b), dx=B[0]-A[0], dy=B[1]-A[1], len=Math.hypot(dx,dy);
+    let md = -1, mi = -1;
+    for(let i=a+1;i<b;i++){
+      const P = idx(i);
+      const d = len ? Math.abs(dy*(P[0]-A[0]) - dx*(P[1]-A[1]))/len : Math.hypot(P[0]-A[0], P[1]-A[1]);
+      if(d > md){ md = d; mi = i; }
+    }
+    if(md > eps){ keep[mi % n] = 1; stack.push([a, mi], [mi, b]); }
+  }
+  const outRing = [];
+  for(let i=0;i<n;i++) if(keep[i]) outRing.push(ring[i]);
+  return outRing;
+}
+// even-odd point-in-fill test across the outer ring and its holes (matches fill-rule="evenodd")
+function pointInFill(pt, fill){
+  let inside = false;
+  for(const ring of [fill.points, ...(fill.holes||[])]){
+    for(let i=0, j=ring.length-1; i<ring.length; j=i++){
+      const [xi, yi] = ring[i], [xj, yj] = ring[j];
+      if((yi > pt.y) !== (yj > pt.y) && pt.x < (xj-xi)*(pt.y-yi)/(yj-yi) + xi) inside = !inside;
+    }
+  }
+  return inside;
+}
+// Is an existing fill entirely under a freshly computed region? (its outline sits inside the new
+// mask, and none of the new region's holes lie inside it) — used to replace it on a re-fill.
+function fillCoveredBy(old, res){
+  const inMask = (wx, wy)=>{
+    const px = Math.floor((wx-res.ox)*res.s), py = Math.floor((wy-res.oy)*res.s);
+    for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){
+      const x=px+dx, y=py+dy;
+      if(x>=0 && y>=0 && x<res.W && y<res.H && res.mask[y*res.W+x]) return true;
+    }
+    return false;
+  };
+  for(const ring of [old.points, ...(old.holes||[])]){
+    for(let i=0;i<ring.length;i++){
+      const a = ring[i], b = ring[(i+1)%ring.length];
+      if(!inMask(a[0], a[1]) || !inMask((a[0]+b[0])/2, (a[1]+b[1])/2)) return false;
+    }
+  }
+  return !res.holeSamples.some(h => pointInFill(h, old));
+}
+// fill-core end
+
+function fillsOf(p){ if(!p.fills) p.fills = []; return p.fills; }
+function fillToPath(fill){
+  return [fill.points, ...(fill.holes||[])].map(r=>'M '+r.map(p=>p[0]+' '+p[1]).join(' L ')+' Z').join(' ');
+}
+function renderFill(fill){
+  const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+  path.setAttribute('fill', fill.color);
+  path.setAttribute('fill-rule','evenodd');
+  path.setAttribute('stroke','none');
+  path.setAttribute('d', fillToPath(fill));
+  path.dataset.id = fill.id;
+  fillSvg.appendChild(path);
+  return path;
+}
+const replacedByFill = {}; // fillId -> [{ index, fill }] it replaced — session-only, so undo can bring them back
+function performFillAt(worldPt){
+  const res = computeFillRegion(boardState.strokes, worldPt, zoom);
+  if(res.status === 'onStroke') return;
+  if(res.status === 'open'){ showToast("that area isn't closed — join the lines and try again"); return; }
+  const fill = { id:'f'+Date.now()+Math.random().toString(36).slice(2), color:currentPenColor, points:res.points, by: myCharacter, createdAt: Date.now() };
+  if(res.holes.length) fill.holes = res.holes;
+  const fills = fillsOf(boardState);
+  const replaced = [];
+  for(let i=fills.length-1;i>=0;i--){
+    if(fillCoveredBy(fills[i], res)){
+      replaced.unshift({ index:i, fill:fills[i] });
+      const el = fillSvg.querySelector(`path[data-id="${fills[i].id}"]`);
+      if(el) el.remove();
+      fills.splice(i,1);
+    }
+  }
+  if(replaced.length) replacedByFill[fill.id] = replaced;
+  fills.push(fill);
+  renderFill(fill);
+  saveIndex();
+}
+function undoLastFill(){
+  const fills = fillsOf(boardState);
+  const last = fills.pop();
+  if(!last) return;
+  const el = fillSvg.querySelector(`path[data-id="${last.id}"]`);
+  if(el) el.remove();
+  const replaced = replacedByFill[last.id];
+  if(replaced){
+    delete replacedByFill[last.id];
+    replaced.forEach(r=> fills.splice(Math.min(r.index, fills.length), 0, r.fill));
+    fillSvg.innerHTML = '';
+    fills.forEach(renderFill);
+  }
+}
+let fillsErasedThisGesture = [];
+function eraseFillAt(worldPt){
+  // one fill per spot per gesture, so rubbing a re-coloured area doesn't also take the older fill beneath it
+  if(fillsErasedThisGesture.some(f=>pointInFill(worldPt, f))) return false;
+  const fills = fillsOf(boardState);
+  for(let i=fills.length-1;i>=0;i--){
+    if(pointInFill(worldPt, fills[i])){
+      const el = fillSvg.querySelector(`path[data-id="${fills[i].id}"]`);
+      if(el) el.remove();
+      fillsErasedThisGesture.push(fills[i]);
+      fills.splice(i,1);
+      return true;
+    }
+  }
+  return false;
 }
 function updatePhotoCollisions(){
   const items = Array.from(photosLayer.querySelectorAll('.photo-item'));
@@ -1841,12 +2362,16 @@ function startInteraction(e){
       panStart = {x:e.clientX, y:e.clientY, panX, panY};
     } else if(isEraserMode){
       mode='erase';
+      fillsErasedThisGesture = [];
       performErase(screenToWorld(e.clientX, e.clientY));
     } else if(isDrawMode){
       mode='draw';
       const wp = screenToWorld(e.clientX, e.clientY);
-      currentStroke = { id:'s'+Date.now()+Math.random().toString(36).slice(2), color:currentPenColor, width: penSize, points:[wp] };
+      currentStroke = { id:'s'+Date.now()+Math.random().toString(36).slice(2), color:currentPenColor, width: penSize, points:[normPoint(wp)] };
       currentPath = renderStroke(currentStroke);
+    } else if(isFillMode){
+      mode='fill'; // the fill itself happens on release, so a two-finger pinch/pan can still take over
+      panStart = {x:e.clientX, y:e.clientY};
     } else {
       mode='pan';
       viewport.classList.add('panning');
@@ -1859,9 +2384,348 @@ function startInteraction(e){
   }
 }
 
-async function saveIndex(){
-  await safeSet('board-index', JSON.stringify({ pages }), true);
+// ---------- Board sync (one Firestore doc per page — see the layout note in storage-core) ----------
+// Safety rules this section keeps:
+//  • a page is only ever written after its remote doc has been seen (pageLoaded), so a page that
+//    hasn't arrived yet can't be overwritten with an empty/partial copy;
+//  • a missing doc, or one we can't parse, never clears anything on screen and is never overwritten;
+//  • a remote update that arrives while we hold unsaved/in-flight changes to that page is merged
+//    (union by id) rather than replacing ours;
+//  • the index is only rewritten after the page docs it lists were written.
+let boardVersion = 0;               // 0 = not known yet, 1 = old single-doc board (migration pending), 2 = per-page docs
+const pageLoaded = new Set();       // page ids whose remote doc we've seen (or that we created)
+const dirtyPages = new Set();       // page ids with local changes not yet written
+const inflightWrites = {};          // page id -> writes awaiting the server
+const lastSyncedJson = {};          // page id -> JSON last written/received (skips no-op writes)
+const pageUnsubs = {};              // page id -> listener unsubscribe
+const removedPageIds = new Set();   // pages this device deliberately removed (wipe)
+const pageWarned = new Set();       // "nearly full" shown once per page per session
+let remoteOrder = new Set();        // page ids in the last index we saw or wrote
+let indexDirty = false;
+let indexSeen = false;
+let migrating = false, pendingV1 = null, lastMigrationAttempt = 0;
+let renderPending = false;
+let flushQueued = false;
+
+function boardRef(key){ return db.collection('boardData').doc(key); }
+
+// Every edit path calls this after changing the current page.
+function saveIndex(){
+  if(boardState && boardState.id) dirtyPages.add(boardState.id);
+  return flushBoard();
+}
+function scheduleFlush(){
+  if(flushQueued) return;
+  flushQueued = true;
+  setTimeout(()=>{ flushQueued = false; flushBoard(); }, 0);
+}
+async function flushBoard(){
+  if(boardVersion !== 2){
+    // still on the old single-doc board: keep everything in memory and retry the move now and then
+    if(boardVersion === 1 && !migrating && Date.now() - lastMigrationAttempt > 15000) runMigration();
+    updateSyncNote();
+    return;
+  }
+  const writes = [];
+  for(const id of [...dirtyPages]){
+    const p = pages.find(x=>x.id===id);
+    if(!p){ dirtyPages.delete(id); continue; }
+    if(!pageLoaded.has(id)) continue; // merged with the remote copy and written once it arrives
+    writes.push(writePage(p));
+  }
+  await Promise.all(writes);
+  // publish the page list only once every page it newly lists has its doc written
+  if(indexDirty && pages.every(p=> remoteOrder.has(p.id) || lastSyncedJson[p.id] !== undefined)) await writeIndex();
   updateSyncNote();
+}
+// Starts the Firestore write synchronously (so our own echo is flagged hasPendingWrites).
+// Resolves true when the page is safely stored (or needed no write), false otherwise.
+function writePage(p){
+  const fixed = p.strokes.map(normalizeStroke); // anything still in {x,y} form goes out as [x,y]
+  if(fixed.some((s,i)=>s!==p.strokes[i])) p.strokes = fixed;
+  const json = JSON.stringify(p);
+  const status = pageSizeStatus(utf8Len(json));
+  if(status === 'full'){
+    // keep it locally (still dirty) — writing would only be rejected
+    storageOK = false;
+    notifyThrottled('this page is full — start a new page with +');
+    return Promise.resolve(false);
+  }
+  if(status === 'warn' && !pageWarned.has(p.id)){
+    pageWarned.add(p.id);
+    showToast('this page is nearly full — start a new page with +');
+  }
+  dirtyPages.delete(p.id);
+  if(json === lastSyncedJson[p.id]) return Promise.resolve(true);
+  inflightWrites[p.id] = (inflightWrites[p.id]||0) + 1;
+  return boardRef(pageDocId(p.id)).set({ value: json })
+    .then(()=>{ lastSyncedJson[p.id] = json; storageOK = true; return true; })
+    .catch(e=>{ storageOK = false; dirtyPages.add(p.id); onSyncError(e, 'board'); return false; })
+    .finally(()=>{
+      inflightWrites[p.id]--;
+      // a remote change was merged in while this write was in flight — send the merged page too
+      if(dirtyPages.has(p.id) && storageOK) scheduleFlush();
+      updateSyncNote();
+    });
+}
+// The index write is a transaction so two devices adding pages at once both keep theirs, and
+// so it never overwrites an old-format board it hasn't migrated.
+// expectV1Raw: during migration, the exact v1 value we migrated from (anything else = abort).
+async function commitIndex(order, expectV1Raw){
+  const ref = boardRef('board-index');
+  return db.runTransaction(async tx=>{
+    const snap = await tx.get(ref);
+    const raw = snap.exists ? snap.data().value : null;
+    const cur = snap.exists ? parseIndex(raw) : { kind:'empty' };
+    if(cur.kind === 'bad') return { bad:true };
+    if(cur.kind === 'v1' && raw !== expectV1Raw) return { v1: cur.pages, raw };
+    const finalOrder = order.slice();
+    if(cur.kind === 'v2') cur.order.forEach(id=>{ if(!finalOrder.includes(id) && !removedPageIds.has(id)) finalOrder.push(id); });
+    tx.set(ref, { value: JSON.stringify({ v:2, order: finalOrder }) });
+    return { order: finalOrder };
+  });
+}
+async function writeIndex(){
+  indexDirty = false;
+  try{
+    const res = await commitIndex(pages.map(p=>p.id), null);
+    if(res.bad){ console.warn('board-index is unreadable — leaving it alone'); return; }
+    if(res.v1){ pendingV1 = { pages: res.v1, raw: res.raw }; runMigration(); return; }
+    if(res.order.length !== pages.length) applyOrder(res.order);
+    else remoteOrder = new Set(res.order);
+    storageOK = true;
+  } catch(e){
+    indexDirty = true;
+    storageOK = false;
+    onSyncError(e, 'board');
+  }
+}
+
+// ----- one-time move from the v1 single doc to per-page docs -----
+// Order of operations: every page doc is written (each in a transaction that merges with any
+// page doc already there), and only when ALL of them succeeded is board-index overwritten.
+// If anything fails, board-index is left exactly as it was and the board keeps running from memory.
+// Two devices migrating at once is harmless: each page write is a merge, and the index write
+// refuses to replace a v1 value other than the one this device migrated from.
+function handleV1Index(v1Pages, raw){
+  pendingV1 = { pages: v1Pages, raw };
+  runMigration();
+}
+async function migratePageTx(p){
+  const ref = boardRef(pageDocId(p.id));
+  return db.runTransaction(async tx=>{
+    const snap = await tx.get(ref);
+    let merged = p;
+    if(snap.exists){
+      let remote;
+      try{ remote = normalizePage(JSON.parse(snap.data().value)); }
+      catch(e){ throw Object.assign(new Error('existing page doc is unreadable'), { code:'unreadable-page' }); }
+      merged = mergePages(p, remote).page;
+    }
+    merged.id = p.id;
+    const json = JSON.stringify(merged);
+    const bytes = utf8Len(json);
+    if(bytes > PAGE_MAX_BYTES) throw Object.assign(new Error('page too big after compaction: '+bytes+' bytes'), { code:'page-too-big', bytes });
+    tx.set(ref, { value: json });
+    return { page: merged, json, bytes };
+  });
+}
+async function runMigration(){
+  if(migrating) return;
+  migrating = true;
+  lastMigrationAttempt = Date.now();
+  try{
+    let fromRaw = null;
+    if(pendingV1){
+      const incoming = [];
+      for(const raw of pendingV1.pages){
+        if(!raw || typeof raw !== 'object') continue;
+        const np = normalizePage(raw);
+        // guard against a normalisation bug ever losing anything
+        if(np.strokes.length !== (raw.strokes||[]).length || np.fills.length !== (raw.fills||[]).length || np.photos.length !== (raw.photos||[]).length){
+          throw Object.assign(new Error('normalisation changed item counts'), { code:'internal' });
+        }
+        if(!validPageId(np.id)) np.id = 'page-' + Math.random().toString(36).slice(2);
+        incoming.push(np);
+      }
+      fromRaw = pendingV1.raw;
+      pendingV1 = null;
+      // on first load start from the v1 board; later (an old client wrote again, or a retry) union with memory
+      const base = boardVersion === 0 ? pages.filter(hasContent) : pages;
+      const byId = new Map(base.map(p=>[p.id, p]));
+      const next = base.slice();
+      for(const np of incoming){
+        const have = byId.get(np.id);
+        if(have) next[next.indexOf(have)] = mergePages(have, np).page;
+        else { next.push(np); byId.set(np.id, np); }
+      }
+      if(!next.length) next.push({ id:'page-1', photos:[], strokes:[], fills:[] });
+      setPages(next);
+      zCounter = Math.max(zCounter, pages.reduce((max,p)=>p.photos.reduce((m2,ph)=>Math.max(m2, ph.z||0), max), 0) + 1);
+      if(boardVersion === 0) boardVersion = 1;
+      renderPageTabs();
+      requestRender();
+      pages.forEach(fetchPagePhotos);
+      maybeFinishLoading();
+    }
+    const snapshot = pages.slice();
+    const results = await Promise.allSettled(snapshot.map(migratePageTx));
+    const failedAt = results.findIndex(r=>r.status === 'rejected');
+    if(failedAt >= 0){
+      const err = results[failedAt].reason || {};
+      console.warn('board migration: page write failed — board-index left untouched', err);
+      storageOK = false;
+      if(err.code === 'page-too-big'){
+        showToast(`page ${failedAt+1} is too full to move to the new storage — nothing was lost; download a backup from the menu`);
+      } else {
+        onSyncError(err, 'board');
+      }
+      return;
+    }
+    // adopt the merged pages (they include anything the page docs already held)
+    snapshot.forEach((p, i)=>{
+      const { page, json } = results[i].value;
+      lastSyncedJson[p.id] = json;
+      pageLoaded.add(p.id);
+      const idx = pages.indexOf(p);
+      if(idx >= 0 && page !== p){
+        // keep any edits made while the migration was running
+        const merged = dirtyPages.has(p.id) ? mergePages(pages[idx], page).page : page;
+        replacePageObject(pages[idx], merged);
+      }
+    });
+    const res = await commitIndex(pages.map(p=>p.id), fromRaw);
+    if(res.bad){ console.warn('board-index unreadable during migration'); storageOK = false; return; }
+    if(res.v1){
+      // an old-version client wrote a different v1 board meanwhile — migrate that too, then retry
+      pendingV1 = { pages: res.v1, raw: res.raw };
+      migrating = false;
+      await runMigration();   // awaited so the finally below doesn't clear the flag mid-run
+      return;
+    }
+    boardVersion = 2;
+    storageOK = true;
+    console.info('board moved to per-page storage:', res.order.length, 'pages');
+    applyOrder(res.order);
+    if(dirtyPages.size) scheduleFlush();
+  } catch(e){
+    console.warn('board migration failed — board-index left untouched', e);
+    storageOK = false;
+    onSyncError(e, 'board');
+  } finally {
+    migrating = false;
+    updateSyncNote();
+    if(pendingV1) setTimeout(runMigration, 0);
+  }
+}
+
+// ----- applying remote state -----
+function setPages(next){
+  const curId = boardState && boardState.id;
+  pages = next;
+  let idx = pages.findIndex(p=>p.id===curId);
+  if(idx < 0) idx = Math.min(currentPage, pages.length-1);
+  if(idx < 0) idx = 0;
+  currentPage = idx;
+  boardState = pages[idx];
+}
+function replacePageObject(oldP, newP){
+  const idx = pages.indexOf(oldP);
+  if(idx < 0) return;
+  pages[idx] = newP;
+  if(boardState === oldP){ boardState = newP; requestRender(); }
+  zCounter = Math.max(zCounter, (newP.photos||[]).reduce((m,ph)=>Math.max(m, ph.z||0), 0) + 1);
+  fetchPagePhotos(newP);
+}
+// v2 index arrived: put pages in its order, attach listeners for new ones, drop the rest —
+// except a page that still holds unsaved local work, which is kept and re-added to the index.
+function applyOrder(order){
+  remoteOrder = new Set(order);
+  const byId = new Map(pages.map(p=>[p.id, p]));
+  const next = [];
+  for(const id of order){
+    if(!validPageId(id) || next.some(p=>p.id===id)) continue;
+    next.push(byId.get(id) || { id, photos:[], strokes:[], fills:[] });
+  }
+  for(const p of pages){
+    if(!next.includes(p) && (dirtyPages.has(p.id) || inflightWrites[p.id] > 0)){ next.push(p); indexDirty = true; }
+  }
+  if(!next.length) return; // an empty list is never applied
+  const before = boardState;
+  setPages(next);
+  for(const p of pages) attachPageListener(p.id);
+  for(const id of Object.keys(pageUnsubs)){
+    if(!pages.some(p=>p.id===id)){ pageUnsubs[id](); delete pageUnsubs[id]; }
+  }
+  if(boardState !== before) requestRender();
+  renderPageTabs();
+  maybeFinishLoading();
+  if(indexDirty) scheduleFlush();
+}
+function attachPageListener(id){
+  if(pageUnsubs[id]) return;
+  pageUnsubs[id] = boardRef(pageDocId(id)).onSnapshot(doc=>{
+    if(doc.metadata.hasPendingWrites) return; // our own write echoing back
+    onPageDoc(id, doc);
+  }, e=>console.warn('page listener failed:', id, e));
+}
+function onPageDoc(id, doc){
+  const local = pages.find(p=>p.id===id);
+  if(!local) return;
+  const wasLoaded = pageLoaded.has(id);
+  if(!doc.exists){
+    // Missing doc: never clears anything. Only trust "it doesn't exist" from the server, not
+    // from an offline cache, before allowing this page to be written.
+    if(!wasLoaded && !(doc.metadata && doc.metadata.fromCache)){
+      pageLoaded.add(id);
+      if(dirtyPages.has(id)) scheduleFlush();
+      maybeFinishLoading();
+    }
+    return;
+  }
+  const raw = doc.data().value;
+  let remote;
+  try{ remote = normalizePage(JSON.parse(raw)); }
+  catch(e){ console.warn('page doc unreadable — leaving it alone:', id, e); return; } // stays unloaded → never overwritten
+  remote.id = id;
+  pageLoaded.add(id);
+  const unsaved = dirtyPages.has(id) || inflightWrites[id] > 0 || (!wasLoaded && hasContent(local));
+  if(unsaved){
+    replacePageObject(local, mergePages(local, remote).page);
+    dirtyPages.add(id);
+    // with a write in flight, its completion re-sends the merged page (only if it succeeded,
+    // so a rejected write's revert can't turn into a retry loop)
+    if(!(inflightWrites[id] > 0)) scheduleFlush();
+  } else {
+    lastSyncedJson[id] = raw;
+    replacePageObject(local, remote);
+  }
+  maybeFinishLoading();
+}
+const photoFetching = new Set();
+async function fetchPagePhotos(p){
+  for(const ph of (p.photos||[])){
+    if(photoCache[ph.id] || photoFetching.has(ph.id)) continue;
+    photoFetching.add(ph.id);
+    const res = await safeGet('photo-'+ph.id, true);
+    photoFetching.delete(ph.id);
+    if(res && res.value){
+      photoCache[ph.id] = res.value;
+      if(boardState && boardState.photos.includes(ph)) requestRender();
+    }
+  }
+}
+// don't yank the board out from under an in-progress stroke/drag — render when it ends
+function requestRender(){
+  if(!svg) return;
+  if(mode === null) renderCurrentPage();
+  else renderPending = true;
+}
+function maybeFinishLoading(){
+  if(!indexSeen) return;
+  if(boardVersion === 1 || pageLoaded.has(boardState.id)){
+    document.getElementById('boardLoading').style.display='none';
+  }
 }
 let lastThrottledSave = 0;
 function throttledSaveIndex(minInterval=200){
@@ -1880,11 +2744,13 @@ function renderCurrentPage(){
   selectedPhotoId = null;
   photosLayer.innerHTML = '';
   svg.innerHTML = '';
+  fillSvg.innerHTML = '';
   if(cursorsLayer){ cursorsLayer.innerHTML = ''; otherCursors = {}; }
   boardState.photos.forEach(meta=>{
     const src = photoCache[meta.id];
     if(src) renderPhoto(meta, src);
   });
+  fillsOf(boardState).forEach(renderFill);
   boardState.strokes.forEach(renderStroke);
   updatePhotoCollisions();
 }
@@ -1904,9 +2770,13 @@ function renderPageTabs(){
   addBtn.textContent = '+';
   addBtn.title = 'Add page';
   addBtn.addEventListener('click', ()=>{
-    pages.push({ id:'page-'+Date.now()+Math.random().toString(36).slice(2), photos:[], strokes:[] });
+    const p = { id:'page-'+Date.now()+Math.random().toString(36).slice(2), photos:[], strokes:[], fills:[] };
+    pages.push(p);
+    pageLoaded.add(p.id); // brand new — nothing remote to wait for
+    indexDirty = true;
+    if(boardVersion === 2) attachPageListener(p.id);
     switchToPage(pages.length-1);
-    saveIndex();
+    saveIndex(); // writes the (empty) page doc first, then the index
   });
   wrap.appendChild(addBtn);
 }
@@ -1923,6 +2793,7 @@ async function initBoard(){
   viewport = document.getElementById('viewport');
   world = document.getElementById('world');
   svg = document.getElementById('stroke-svg');
+  fillSvg = document.getElementById('fill-svg');
   photosLayer = document.getElementById('photos-layer');
   eraserCursorEl = document.getElementById('eraserCursor');
   penCursorEl = document.getElementById('penCursor');
@@ -1930,46 +2801,33 @@ async function initBoard(){
 
   applyTransform();
 
-  let firstLoad = true;
-  db.collection('boardData').doc('board-index').onSnapshot(async (doc)=>{
+  boardRef('board-index').onSnapshot((doc)=>{
     if(doc.metadata.hasPendingWrites) return; // this is just the echo of our own write, already reflected locally
-    let newPages = pages;
-    if(doc.exists){
-      try{
-        const parsed = JSON.parse(doc.data().value);
-        if(parsed.pages && Array.isArray(parsed.pages) && parsed.pages.length){
-          newPages = parsed.pages;
-        } else if(parsed.photos || parsed.strokes){
-          newPages = [{ id:'page-1', photos: parsed.photos||[], strokes: parsed.strokes||[] }];
-        }
-      }catch(e){ console.warn('board-index parse failed:', e); }
-    }
-    newPages.forEach(p=>{
-      if(!p.photos) p.photos=[];
-      if(!p.strokes) p.strokes=[];
-      if(!p.id) p.id='page-'+Math.random().toString(36).slice(2);
-    });
-    pages = newPages;
-    if(currentPage >= pages.length) currentPage = 0;
-    boardState = pages[currentPage];
-    zCounter = Math.max(zCounter, pages.reduce((max,p)=>p.photos.reduce((m2,ph)=>Math.max(m2, ph.z||0), max), 0) + 1);
-
-    const neededIds = [];
-    pages.forEach(p=> p.photos.forEach(ph=>{ if(!photoCache[ph.id]) neededIds.push(ph.id); }));
-    for(const id of neededIds){
-      const res = await safeGet('photo-'+id, true);
-      if(res && res.value) photoCache[id] = res.value;
-    }
-
-    if(mode === null){ // don't yank the board out from under an in-progress drag or stroke
-      renderCurrentPage();
+    if(!doc.exists && doc.metadata.fromCache) return; // offline with nothing cached — wait for the server
+    const idx = doc.exists ? parseIndex(doc.data().value) : { kind:'empty' };
+    if(idx.kind === 'v2'){
+      // a v2 index never triggers a migration
+      boardVersion = 2;
+      indexSeen = true;
+      applyOrder(idx.order);
+    } else if(idx.kind === 'v1'){
+      indexSeen = true;
+      handleV1Index(idx.pages, doc.data().value);
+    } else if(idx.kind === 'empty'){
+      indexSeen = true;
+      if(boardVersion === 0){
+        // brand-new board: start sharded right away; the index is written with the first save
+        boardVersion = 2;
+        indexDirty = true;
+        applyOrder(pages.map(p=>p.id));
+        remoteOrder = new Set();
+      }
+    } else {
+      console.warn('board-index unreadable — not touching it');
+      if(!indexSeen){ indexSeen = true; document.getElementById('boardLoading').style.display='none'; }
     }
     renderPageTabs();
-
-    if(firstLoad){
-      document.getElementById('boardLoading').style.display='none';
-      firstLoad = false;
-    }
+    maybeFinishLoading();
     updateSyncNote();
   }, e=>console.warn('board-index listener failed:', e));
 
@@ -1986,7 +2844,9 @@ async function initBoard(){
     const wp = screenToWorld(e.clientX, e.clientY);
     if(lastLiveBroadcastPos && Math.hypot(wp.x-lastLiveBroadcastPos.x, wp.y-lastLiveBroadcastPos.y) < 3) return;
     lastLiveBroadcastPos = wp;
-    const drawingPreview = (mode==='draw' && currentStroke) ? { points: currentStroke.points, color: currentStroke.color, width: currentStroke.width } : null;
+    // Firestore fields can't hold nested arrays, so the live preview goes out as {x,y} objects
+    // (which an older partner client also understands).
+    const drawingPreview = (mode==='draw' && currentStroke) ? { points: currentStroke.points.map(p=>({ x:p[0], y:p[1] })), color: currentStroke.color, width: currentStroke.width } : null;
     broadcastLiveState(wp.x, wp.y, drawingPreview);
   });
 
@@ -2020,9 +2880,12 @@ async function initBoard(){
       panY = panStart.panY + (e.clientY-panStart.y);
       applyTransform();
     } else if(mode==='draw' && pointers.size===1 && currentStroke){
-      const wp = screenToWorld(e.clientX, e.clientY);
-      currentStroke.points.push(wp);
-      currentPath.setAttribute('d', pointsToPath(currentStroke.points));
+      const np = normPoint(screenToWorld(e.clientX, e.clientY));
+      const last = currentStroke.points[currentStroke.points.length-1];
+      if(np && !(last && last[0]===np[0] && last[1]===np[1])){
+        currentStroke.points.push(np);
+        currentPath.setAttribute('d', pointsToPath(currentStroke.points));
+      }
     } else if(mode==='erase' && pointers.size===1){
       performErase(screenToWorld(e.clientX, e.clientY));
     } else if(mode==='pinch' && pointers.size===2){
@@ -2049,6 +2912,9 @@ async function initBoard(){
     pointers.delete(e.pointerId);
     viewport.classList.remove('panning');
     if(mode==='draw' && currentStroke){
+      // simplify once, when the stroke is finished; what's on screen matches what's saved
+      currentStroke.points = simplifyPolyline(currentStroke.points, STROKE_EPS);
+      if(currentPath) currentPath.setAttribute('d', pointsToPath(currentStroke.points));
       boardState.strokes.push(currentStroke); saveIndex();
       currentStroke=null; currentPath=null;
       clearLiveDrawing();
@@ -2056,7 +2922,13 @@ async function initBoard(){
     if(mode==='erase'){
       saveIndex();
     }
-    if(pointers.size===0) mode=null;
+    if(mode==='fill' && pointers.size===0 && Math.hypot(e.clientX-panStart.x, e.clientY-panStart.y) < 10 && e.type==='pointerup'){
+      performFillAt(screenToWorld(panStart.x, panStart.y));
+    }
+    if(pointers.size===0){
+      mode=null;
+      if(renderPending){ renderPending = false; renderCurrentPage(); } // a remote update arrived mid-gesture
+    }
     else if(pointers.size===1 && mode==='pinch'){
       mode='pan';
       const p = Array.from(pointers.values())[0];
@@ -2082,15 +2954,19 @@ async function initBoard(){
   // --- toolbar: tools ---
   const pointerBtn = document.getElementById('pointerBtn');
   const penBtn = document.getElementById('penBtn');
+  const fillBtn = document.getElementById('fillBtn');
   const eraserBtn = document.getElementById('eraserBtn');
   const eraserPopover = document.getElementById('eraserPopover');
   function setTool(tool){
     isDrawMode = tool==='pen';
     isEraserMode = tool==='eraser';
+    isFillMode = tool==='fill';
     pointerBtn.classList.toggle('active', tool==='pointer');
     penBtn.classList.toggle('active', tool==='pen');
     eraserBtn.classList.toggle('active', tool==='eraser');
+    fillBtn.classList.toggle('active', tool==='fill');
     viewport.classList.toggle('draw-mode', tool==='pen');
+    viewport.classList.toggle('fill-mode', tool==='fill');
     viewport.classList.toggle('erase-mode', tool==='eraser');
     eraserPopover.classList.toggle('open', tool==='eraser');
     if(tool!=='eraser') eraserCursorEl.style.display='none';
@@ -2099,6 +2975,7 @@ async function initBoard(){
   pointerBtn.addEventListener('click', ()=>setTool('pointer'));
   penBtn.addEventListener('click', ()=>setTool(isDrawMode ? 'pointer' : 'pen'));
   eraserBtn.addEventListener('click', ()=>setTool(isEraserMode ? 'pointer' : 'eraser'));
+  fillBtn.addEventListener('click', ()=>setTool(isFillMode ? 'pointer' : 'fill'));
 
   // --- eraser size ---
   const eraserSlider = document.getElementById('eraserSlider');
@@ -2134,7 +3011,7 @@ async function initBoard(){
     colorBtn.style.background = c;
     colorWheel.value = c;
     swatches.forEach(s=>s.classList.toggle('selected', s.dataset.color.toLowerCase()===c.toLowerCase()));
-    setTool('pen');
+    setTool(isFillMode ? 'fill' : 'pen'); // picking a colour while filling keeps the bucket
   }
   colorBtn.style.background = currentPenColor;
   colorBtn.addEventListener('click', (e)=>{
@@ -2156,6 +3033,11 @@ async function initBoard(){
   });
 
   document.getElementById('undoBtn').addEventListener('click', ()=>{
+    // undo whichever is newer: the last fill (createdAt) or the last stroke (timestamp in its id)
+    const lastFill = fillsOf(boardState)[boardState.fills.length-1];
+    const lastStrokeObj = boardState.strokes[boardState.strokes.length-1];
+    const strokeTime = lastStrokeObj ? (parseInt(String(lastStrokeObj.id).slice(1,14),10) || 0) : -1;
+    if(lastFill && (lastFill.createdAt||0) >= strokeTime){ undoLastFill(); saveIndex(); return; }
     const last = boardState.strokes.pop();
     if(last){
       const el = svg.querySelector(`path[data-id="${last.id}"]`);
@@ -2169,43 +3051,143 @@ async function initBoard(){
   });
 
   const photoInput = document.getElementById('photoInput');
-  document.getElementById('addPhotoBtn').addEventListener('click', ()=>photoInput.click());
+  const addPhotoBtn = document.getElementById('addPhotoBtn');
+  const photoPopover = document.getElementById('photoPopover');
+  addPhotoBtn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    colorPopover.classList.remove('open');
+    photoPopover.classList.toggle('open');
+  });
+  photoPopover.addEventListener('click', (e)=>e.stopPropagation());
+  colorBtn.addEventListener('click', ()=> photoPopover.classList.remove('open'));
+  document.addEventListener('click', ()=> photoPopover.classList.remove('open'));
+  document.getElementById('uploadPhotoOption').addEventListener('click', ()=>{
+    photoPopover.classList.remove('open');
+    photoInput.click();
+  });
   photoInput.addEventListener('change', async (e)=>{
     const files = Array.from(e.target.files);
     const rect = viewport.getBoundingClientRect();
     const centerWorld = { x:(rect.width/2-panX)/zoom, y:(rect.height/2-panY)/zoom };
     let anyFailed = false;
     for(const file of files){
-      let dataUrl, imgW, imgH;
-      try{
-        ({ dataUrl, w: imgW, h: imgH } = await fileToDataUrl(file));
-      } catch(err){
-        console.warn('photo encode failed:', err);
-        anyFailed = true;
-        continue;
-      }
-      const id = 'p'+Date.now()+Math.random().toString(36).slice(2);
-      // Write the actual image FIRST — only add it to the board (locally and for the partner)
-      // once we know it actually made it to Firestore, so a rejected write can't leave a
-      // permanent blank gap on the other person's board.
-      const written = await safeSet('photo-'+id, dataUrl, true);
-      if(!written){
-        anyFailed = true;
-        continue;
-      }
       const jitter = ()=> (Math.random()-0.5)*140;
-      const displayW = 220;
-      const displayH = Math.round(displayW * (imgH/imgW)) || displayW;
-      const meta = { id, x: centerWorld.x+jitter(), y: centerWorld.y+jitter(), w: displayW, h: displayH, origW: displayW, origH: displayH, z: zCounter++, rot:0, flipH:false, flipV:false, lockRatio:true };
-      boardState.photos.push(meta);
-      photoCache[id] = dataUrl;
-      renderPhoto(meta, dataUrl);
+      if(!(await addImageToBoard(file, centerWorld.x+jitter(), centerWorld.y+jitter()))) anyFailed = true;
     }
-    if(anyFailed) showToast("that photo was too big to sync — try a smaller one");
-    updatePhotoCollisions();
-    saveIndex();
+    finishImageBatch(anyFailed);
     photoInput.value = '';
   });
+
+  // --- paste / drop images onto the board ---
+  // Last pointer position over the viewport, so a paste lands where the mouse is.
+  let lastBoardPointer = null;
+  viewport.addEventListener('pointermove', (e)=>{ lastBoardPointer = { x:e.clientX, y:e.clientY }; });
+  viewport.addEventListener('pointerleave', ()=>{ lastBoardPointer = null; });
+  function viewportCenterWorld(){
+    const rect = viewport.getBoundingClientRect();
+    return screenToWorld(rect.left+rect.width/2, rect.top+rect.height/2);
+  }
+  function pasteAnchorWorld(){
+    const rect = viewport.getBoundingClientRect();
+    const p = lastBoardPointer;
+    if(p && p.x>=rect.left && p.x<=rect.right && p.y>=rect.top && p.y<=rect.bottom) return screenToWorld(p.x, p.y);
+    return viewportCenterWorld();
+  }
+  function boardTabActive(){
+    return document.getElementById('tab-board').classList.contains('active');
+  }
+  function isTextEntry(el){
+    if(!el || el === document.body) return false;
+    if(el.isContentEditable || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') return true;
+    if(el.tagName === 'INPUT') return !['range','color','checkbox','radio','button','submit','reset','file','image'].includes((el.type||'').toLowerCase());
+    return false;
+  }
+
+  document.addEventListener('paste', (e)=>{
+    if(!boardTabActive() || isTextEntry(document.activeElement) || isTextEntry(e.target)) return;
+    const cd = e.clipboardData;
+    if(!cd) return;
+    const blobs = [];
+    for(const item of Array.from(cd.items || [])){
+      if(item.kind === 'file' && item.type.startsWith('image/')){
+        const f = item.getAsFile();
+        // One paste = one image. Browsers/OSes often put the same picture on the clipboard
+        // in several formats (PNG + TIFF, etc.), which would otherwise paste duplicates.
+        if(f){ blobs.push(f); break; }
+      }
+    }
+    if(blobs.length){
+      e.preventDefault();
+      addImagesAt(blobs, pasteAnchorWorld());
+      return;
+    }
+    // No image bytes — some sites/browsers only put an <img> tag or a bare URL on the clipboard.
+    const url = extractImageUrl(cd.getData('text/html'), cd.getData('text/uri-list') || cd.getData('text/plain'));
+    if(url){
+      e.preventDefault();
+      addImageFromUrl(url, pasteAnchorWorld());
+    }
+  });
+
+  // 📷 → "paste image": async clipboard API, for phones (no paste event on a canvas) and discoverability.
+  document.getElementById('pasteImageOption').addEventListener('click', async ()=>{
+    photoPopover.classList.remove('open');
+    const anchor = viewportCenterWorld();
+    const noAccess = "your browser won't let the page read the clipboard — use Ctrl/Cmd+V instead";
+    if(!navigator.clipboard || !navigator.clipboard.read){ showToast(noAccess); return; }
+    let items;
+    try{
+      items = await navigator.clipboard.read(); // called straight from the tap — Safari requires that
+    } catch(err){
+      console.warn('clipboard read failed:', err);
+      showToast(noAccess);
+      return;
+    }
+    try{
+      const blobs = [];
+      let html = '', text = '';
+      for(const item of items){
+        const imgType = item.types.find(t=>t.startsWith('image/'));
+        if(imgType){ blobs.push(await item.getType(imgType)); continue; }
+        if(!html && item.types.includes('text/html')) html = await (await item.getType('text/html')).text();
+        if(!text && item.types.includes('text/plain')) text = await (await item.getType('text/plain')).text();
+      }
+      if(blobs.length){ addImagesAt(blobs, anchor); return; }
+      const url = extractImageUrl(html, text);
+      if(url){ addImageFromUrl(url, anchor); return; }
+      showToast("there's no image on the clipboard — copy one first");
+    } catch(err){
+      console.warn('clipboard item read failed:', err);
+      showToast(noAccess);
+    }
+  });
+
+  // Drag-and-drop image files (or an image dragged from another tab, which Chrome exposes as a file).
+  // Only reacts to drags that carry Files, so it can't interfere with anything else.
+  const hasFiles = (e)=> !!e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
+  viewport.addEventListener('dragover', (e)=>{
+    if(!hasFiles(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    viewport.classList.add('drop-target');
+  });
+  viewport.addEventListener('dragleave', (e)=>{
+    if(e.relatedTarget && viewport.contains(e.relatedTarget)) return;
+    viewport.classList.remove('drop-target');
+  });
+  viewport.addEventListener('drop', (e)=>{
+    viewport.classList.remove('drop-target');
+    if(!hasFiles(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const imgs = Array.from(e.dataTransfer.files || []).filter(f=> (f.type||'').startsWith('image/'));
+    if(!imgs.length){ showToast("only images can go on the board"); return; }
+    addImagesAt(imgs, screenToWorld(e.clientX, e.clientY));
+  });
+  // A file dropped just off the board (toolbar, page tabs…) would otherwise make the browser
+  // navigate away to open it.
+  document.addEventListener('dragover', (e)=>{ if(hasFiles(e) && !viewport.contains(e.target)){ e.preventDefault(); e.dataTransfer.dropEffect = 'none'; } });
+  document.addEventListener('drop', (e)=>{ if(hasFiles(e)){ e.preventDefault(); viewport.classList.remove('drop-target'); } });
 
   // --- wipe board ---
   const wipeModal = document.getElementById('wipeModal');
@@ -2241,14 +3223,108 @@ async function initBoard(){
       for(const meta of p.photos){
         safeDelete('photo-'+meta.id, true);
       }
+      // the old page docs are left in place (just no longer listed) — only the index changes
+      removedPageIds.add(p.id);
+      dirtyPages.delete(p.id);
+      if(pageUnsubs[p.id]){ pageUnsubs[p.id](); delete pageUnsubs[p.id]; }
     }
-    pages = [{ id:'page-'+Date.now(), photos:[], strokes:[] }];
+    const fresh = { id:'page-'+Date.now(), photos:[], strokes:[], fills:[] };
+    pages = [fresh];
+    pageLoaded.add(fresh.id);
+    indexDirty = true;
+    if(boardVersion === 2) attachPageListener(fresh.id);
     photoCache = {};
     zCounter = 1;
     switchToPage(0);
     saveIndex();
   });
 }
+// ---------- Adding images to the board (upload, paste, drop all go through here) ----------
+// Compresses, writes the image doc, and only then adds it to the board. Returns true on success.
+// (worldX, worldY) is the photo's top-left, or its centre when `centered` is true.
+// Callers run finishImageBatch() once after their loop.
+async function addImageToBoard(blobOrFile, worldX, worldY, centered=false){
+  let dataUrl, imgW, imgH;
+  try{
+    ({ dataUrl, w: imgW, h: imgH } = await fileToDataUrl(blobOrFile));
+  } catch(err){
+    console.warn('photo encode failed:', err);
+    return false;
+  }
+  const id = 'p'+Date.now()+Math.random().toString(36).slice(2);
+  // Write the actual image FIRST — only add it to the board (locally and for the partner)
+  // once we know it actually made it to Firestore, so a rejected write can't leave a
+  // permanent blank gap on the other person's board.
+  const written = await safeSet('photo-'+id, dataUrl, true);
+  if(!written) return false;
+  const displayW = 220;
+  const displayH = Math.round(displayW * (imgH/imgW)) || displayW;
+  const x = centered ? worldX - displayW/2 : worldX;
+  const y = centered ? worldY - displayH/2 : worldY;
+  const meta = { id, x, y, w: displayW, h: displayH, origW: displayW, origH: displayH, z: zCounter++, rot:0, flipH:false, flipV:false, lockRatio:true };
+  boardState.photos.push(meta);
+  photoCache[id] = dataUrl;
+  renderPhoto(meta, dataUrl);
+  return true;
+}
+function finishImageBatch(anyFailed){
+  if(anyFailed) showToast("that photo was too big to sync — try a smaller one");
+  updatePhotoCollisions();
+  saveIndex();
+}
+// Stays silent unless the work takes over 600ms, then shows "adding image…" until it finishes.
+async function withAddingToast(work){
+  const MSG = 'adding image…';
+  let shown = false;
+  const t = setTimeout(()=>{ shown = true; showToast(MSG); }, 600);
+  try{ return await work(); }
+  finally{
+    clearTimeout(t);
+    if(shown && toastEl && toastEl.textContent === MSG) toastEl.classList.remove('show');
+  }
+}
+// Pasted / dropped images: centred on `point` (world coords), each subsequent one offset by 30.
+function addImagesAt(blobs, point){
+  return withAddingToast(async ()=>{
+    let anyFailed = false;
+    for(let i=0; i<blobs.length; i++){
+      if(!(await addImageToBoard(blobs[i], point.x + i*30, point.y + i*30, true))) anyFailed = true;
+    }
+    finishImageBatch(anyFailed);
+  });
+}
+// First usable image URL from copied HTML (<img src>) or a bare URL / data: URL.
+function extractImageUrl(html, text){
+  if(html){
+    try{
+      const img = new DOMParser().parseFromString(html, 'text/html').querySelector('img[src]');
+      const src = img && img.getAttribute('src').trim();
+      if(src && /^(https?:|data:image\/)/i.test(src)) return src;
+    } catch(e){ /* not parseable — fall through to the text */ }
+  }
+  const line = (text||'').split(/\r?\n/).map(s=>s.trim()).find(s=>s && !s.startsWith('#')) || '';
+  if(/^data:image\//i.test(line)) return line;
+  if(/^https?:\/\/\S+\.(png|jpe?g|gif|webp|avif|bmp|svg)([?#]\S*)?$/i.test(line)) return line;
+  return null;
+}
+// Direct fetch only (never via a proxy). Most sites block this with CORS; data: URLs always work.
+function addImageFromUrl(url, point){
+  return withAddingToast(async ()=>{
+    let blob = null;
+    try{
+      const res = await fetch(url, { mode:'cors' });
+      if(res.ok) blob = await res.blob();
+      if(blob && blob.type && !blob.type.startsWith('image/')) blob = null;
+    } catch(err){ console.warn('image fetch failed:', err); }
+    if(!blob){
+      showToast("couldn't grab that image — try right-click → Copy image instead of copying the link");
+      return;
+    }
+    const ok = await addImageToBoard(blob, point.x, point.y, true);
+    finishImageBatch(!ok);
+  });
+}
+
 const MAX_PHOTO_DATAURL_LEN = 700000; // ~700KB of base64 — comfortably under Firestore's 1MiB doc cap
 function fileToDataUrl(file, maxDim=1600, quality=0.82){
   return new Promise((resolve, reject)=>{
@@ -2264,7 +3340,10 @@ function fileToDataUrl(file, maxDim=1600, quality=0.82){
           }
           const canvas = document.createElement('canvas');
           canvas.width = w; canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          const ctx2d = canvas.getContext('2d');
+          ctx2d.fillStyle = '#FFFFFF'; // JPEG has no alpha — without this, transparent PNG areas encode as black
+          ctx2d.fillRect(0, 0, w, h);
+          ctx2d.drawImage(img, 0, 0, w, h);
           return { dataUrl: canvas.toDataURL('image/jpeg', q), w, h };
         }
         let result = render(maxDim, quality);
@@ -3302,6 +4381,107 @@ function exportBackup(){
   URL.revokeObjectURL(url);
 }
 document.getElementById('backupBtn').addEventListener('click', exportBackup);
+
+// ---------- Restore from a backup (merge only — never removes anything on the board) ----------
+// Step 1 picks the file and shows what it would add; step 2 ("add them") does it.
+let restorePending = null; // { backup, plan }
+function plural(n, one, many){ return n + ' ' + (n === 1 ? one : many); }
+function hideRestoreConfirm(){
+  restorePending = null;
+  document.getElementById('restoreConfirm').hidden = true;
+}
+document.getElementById('restoreBtn').addEventListener('click', ()=>{
+  hideRestoreConfirm();
+  document.getElementById('restoreInput').click();
+});
+document.getElementById('restoreCancelBtn').addEventListener('click', hideRestoreConfirm);
+document.getElementById('restoreInput').addEventListener('change', async (e)=>{
+  const file = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if(!file) return;
+  const box = document.getElementById('restoreConfirm');
+  const text = document.getElementById('restoreText');
+  const go = document.getElementById('restoreGoBtn');
+  let backup = null;
+  try{ backup = JSON.parse(await file.text()); } catch(err){ backup = null; }
+  const plan = backup && planRestore(backup, pages);
+  box.hidden = false;
+  go.disabled = false;
+  if(!plan){
+    text.textContent = "that file doesn't look like a board backup";
+    go.hidden = true;
+    return;
+  }
+  const parts = [];
+  if(plan.strokes) parts.push(plural(plan.strokes, 'stroke', 'strokes'));
+  if(plan.fills) parts.push(plural(plan.fills, 'fill', 'fills'));
+  if(plan.photos) parts.push(plural(plan.photos, 'photo', 'photos'));
+  if(!parts.length){
+    text.textContent = 'everything in this backup is already on the board';
+    go.hidden = true;
+    return;
+  }
+  restorePending = { backup, plan };
+  const list = parts.length > 1 ? parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length-1] : parts[0];
+  text.textContent = `this backup has ${list} that aren't on the board` +
+    (plan.newPages ? `, including ${plan.newPages === 1 ? 'a whole page' : plan.newPages + ' whole pages'}` : '') +
+    '. add them? nothing on the board will be removed.';
+  go.hidden = false;
+});
+document.getElementById('restoreGoBtn').addEventListener('click', async ()=>{
+  if(!restorePending) return;
+  const { backup, plan } = restorePending;
+  const go = document.getElementById('restoreGoBtn');
+  go.disabled = true;
+  try{
+    const added = await applyRestore(backup, plan);
+    hideRestoreConfirm();
+    showToast(added ? `added ${plural(added, 'thing', 'things')} from the backup` : 'nothing new to add from that backup');
+  } catch(err){
+    console.warn('restore failed:', err);
+    go.disabled = false;
+    showToast("couldn't restore that backup — nothing was changed");
+  }
+});
+async function applyRestore(backup, plan){
+  const images = (backup.photos && typeof backup.photos === 'object') ? backup.photos : {};
+  let added = 0, newPage = false;
+  for(const pp of plan.pages){
+    // Photos: keep a photo only if its image is (or can be put) in its own photo-<id> doc.
+    const photos = [];
+    for(const meta of pp.add.photos){
+      if(!meta || !meta.id) continue;
+      if(photoCache[meta.id]){ photos.push(meta); continue; }
+      const existing = await safeGet('photo-'+meta.id, true);
+      if(existing && existing.value){ photoCache[meta.id] = existing.value; photos.push(meta); continue; }
+      const img = images[meta.id];
+      if(typeof img === 'string' && /^data:image\//.test(img) && utf8Len(img) <= PAGE_MAX_BYTES){
+        if(await safeSet('photo-'+meta.id, img, true)){ photoCache[meta.id] = img; photos.push(meta); }
+      }
+    }
+    const extra = { id: pp.id, strokes: pp.add.strokes, fills: pp.add.fills, photos };
+    const local = pages.find(p=>p.id===pp.id);
+    if(local){
+      const { page, added: a } = mergePages(local, extra);
+      added += a.strokes + a.fills + a.photos;
+      replacePageObject(local, page);
+    } else {
+      if(!hasContent(extra)) continue;
+      // Not on the board: add it, but don't mark it loaded — if a doc with this id still exists
+      // (e.g. a page that was wiped), its listener merges that in before anything is written.
+      pages.push(normalizePage(extra));
+      added += extra.strokes.length + extra.fills.length + extra.photos.length;
+      indexDirty = true;
+      newPage = true;
+      if(boardVersion === 2) attachPageListener(pp.id);
+    }
+    dirtyPages.add(pp.id);
+  }
+  if(newPage) renderPageTabs();
+  requestRender();
+  await flushBoard();
+  return added;
+}
 
 function initApp(){
   setupTabs();
