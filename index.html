@@ -714,8 +714,8 @@
 </head>
 <body>
 
-  <!-- SCREEN 1: PASSWORD -->
-  <div class="screen" id="screen-login">
+  <!-- SCREEN 1: PASSWORD — hidden until Firebase Auth tells us whether we're already signed in -->
+  <div class="screen" id="screen-login" style="display:none;">
     <div class="card" id="login-card">
       <div class="heart">🤍</div>
       <h1>This one's just for us</h1>
@@ -767,12 +767,13 @@
       </div>
       <div class="override-box" id="overrideBox" style="display:none;">
         <p class="hint" id="overrideHint">Someone's already signed in as this person. Only the two of us know this — answer to take over.</p>
-        <p class="confirm-phrase" id="overrideQuestion">What's the first elite ball knowledge reference we made? (Hint: Ocean)</p>
-        <input type="text" id="overrideInput" placeholder="Your answer" />
+        <p class="confirm-phrase" id="overrideQuestion">The first elite ball knowledge reference we made — what are the two words? (Hint: Ocean)</p>
+        <input type="text" id="overrideInput" placeholder="Two words" />
         <button class="primary-btn" id="overrideSubmitBtn" disabled>Continue as this person</button>
         <button class="secondary-btn" id="overrideCancelBtn">Never mind</button>
         <div class="error-msg" id="overrideError"></div>
       </div>
+      <button class="link-btn" id="signOutBtn">sign out</button>
     </div>
   </div>
 
@@ -1053,6 +1054,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-auth-compat.js"></script>
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyA3NmOYnnoXG74WGHYf0pLLSeLq8ird_UU",
@@ -1064,16 +1066,20 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+// Keep the signed-in session across reloads (the password is checked by Firebase Auth, not by this page).
+firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+  .catch(e=>console.warn('auth persistence failed:', e));
 /* ============================================================
    ✏️ EDIT THIS SECTION
    ============================================================ */
 const CONFIG = {
-  password: "sisiruirui0803", // shared password — your names + the day it started
+  LOGIN_EMAIL: "us@sisiruirui.com", // the one Firebase Auth account the two of you share — the password lives in Firebase, not here
   anniversary: { day: 3, month: 8 }, // August 3rd — already set
   startedDating: { year: 2026, month: 8, day: 3, hour: 23, minute: 32 } // ✏️ EDIT: set the correct year — day/time already set to Aug 3rd, 11:32 PM
 };
 const WIPE_PHRASE = "wipe the board";
-const SECURITY_ANSWER_KEYWORDS = ["travis", "fish"]; // answer must contain all of these words (case-insensitive)
+// sha256 of the normalised answer — to change it run: node -e 'console.log(require("crypto").createHash("sha256").update("your new answer").digest("hex"))'
+const SECURITY_ANSWER_HASH = "d655d98371520e2a8db234043ca90f59b5f6e24762c4fa2a338e170d668287ab";
 /* ============================================================ */
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -1088,14 +1094,25 @@ document.getElementById('passwordInput').addEventListener('input', (e)=>{
 document.getElementById('showPasswordCheckbox').addEventListener('change', (e)=>{
   document.getElementById('passwordInput').type = e.target.checked ? 'text' : 'password';
 });
-function tryLogin(){
-  const val = document.getElementById('passwordInput').value;
-  if(val === CONFIG.password){
+// The password is never in this page — it's checked by Firebase Auth against the shared account,
+// which is also what lets the Firestore rules require a signed-in session.
+async function tryLogin(){
+  const input = document.getElementById('passwordInput');
+  const btn = document.getElementById('loginBtn');
+  const errorEl = document.getElementById('loginError');
+  const val = input.value;
+  btn.disabled = true;
+  errorEl.textContent = '';
+  try{
+    await firebase.auth().signInWithEmailAndPassword(CONFIG.LOGIN_EMAIL, val);
     document.getElementById('screen-login').style.display='none';
     document.getElementById('screen-auth').style.display='flex';
-  } else {
-    document.getElementById('loginError').textContent = "that's not it";
+  } catch(e){
+    errorEl.textContent = (e && e.code === 'auth/too-many-requests')
+      ? "too many tries — wait a little and try again"
+      : "that's not it";
     loginCard.classList.remove('shake'); void loginCard.offsetWidth; loginCard.classList.add('shake');
+    btn.disabled = input.value.length === 0;
   }
 }
 
@@ -1176,17 +1193,37 @@ document.getElementById('charSisiBtn').addEventListener('click', ()=>handleCharC
 document.getElementById('overrideCancelBtn').addEventListener('click', ()=>{
   document.getElementById('overrideBox').style.display='none';
 });
+// Switch only changes character; this is the one place that actually ends the session.
+document.getElementById('signOutBtn').addEventListener('click', async ()=>{
+  try{ await firebase.auth().signOut(); } catch(e){ console.warn('sign out failed:', e); }
+  localStorage.removeItem('boardUnlocked');
+  localStorage.removeItem('character');
+  location.reload();
+});
 document.getElementById('overrideInput').addEventListener('input', (e)=>{
   document.getElementById('overrideSubmitBtn').disabled = e.target.value.trim().length===0;
 });
-document.getElementById('overrideSubmitBtn').addEventListener('click', ()=>{
-  const val = document.getElementById('overrideInput').value.toLowerCase();
-  const ok = SECURITY_ANSWER_KEYWORDS.every(k=>val.includes(k));
-  if(ok){
-    enterAppAsCharacter(overrideTargetChar, { force:true });
-  } else {
-    document.getElementById('overrideError').textContent = "that's not it — try again";
-  }
+// lowercase, trim, collapse runs of whitespace — so stray caps and spacing don't change the hash
+function normaliseAnswer(s){
+  return String(s).toLowerCase().trim().replace(/\s+/g, ' ');
+}
+async function sha256Hex(s){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+document.getElementById('overrideSubmitBtn').addEventListener('click', async ()=>{
+  const input = document.getElementById('overrideInput');
+  const btn = document.getElementById('overrideSubmitBtn');
+  btn.disabled = true;
+  try{
+    const hash = await sha256Hex(normaliseAnswer(input.value));
+    if(hash === SECURITY_ANSWER_HASH){
+      enterAppAsCharacter(overrideTargetChar, { force:true });
+      return;
+    }
+  } catch(e){ console.warn('answer check failed:', e); }
+  document.getElementById('overrideError').textContent = "that's not it — try again";
+  btn.disabled = input.value.trim().length === 0;
 });
 
 const PRESENCE_STALE_MS = 60000; // same staleness window used everywhere presence is checked
@@ -4496,11 +4533,26 @@ function initApp(){
   setInterval(updateTogetherTimer, 1000);
 }
 
-if(localStorage.getItem('boardUnlocked') === 'true'){
+// ---------- Boot ----------
+// No signed-in Firebase user means the login screen, always — boardUnlocked/character are only
+// hints about which screen to land on once auth has said yes. onAuthStateChanged fires once on
+// load (with null or the user); later fires come from our own sign-in, which routes itself.
+let authBooted = false;
+firebase.auth().onAuthStateChanged(user=>{
+  if(authBooted) return;
+  authBooted = true;
+  if(!user){
+    document.getElementById('screen-login').style.display='flex';
+    return;
+  }
   document.getElementById('screen-login').style.display='none';
-  document.getElementById('screen-auth').style.display='none';
-  proceedPastAuth();
-}
+  if(localStorage.getItem('boardUnlocked') === 'true'){
+    document.getElementById('screen-auth').style.display='none';
+    proceedPastAuth();
+  } else {
+    document.getElementById('screen-auth').style.display='flex';
+  }
+});
 </script>
 </body>
 </html>
