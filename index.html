@@ -4,6 +4,15 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content" />
 <title>For You</title>
+<!-- Installable app: lets it live on the home screen, which iOS requires for web notifications -->
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#ffffff" />
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="sisi &amp; ruirui" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Quicksand:wght@600;700&display=swap" rel="stylesheet">
@@ -581,13 +590,36 @@
   /* The fast, everyday channel. A flex column (list grows, composer sits at the bottom) rather
      than anything position:fixed, so when the viewport shrinks for the keyboard the composer
      simply rides up with it. */
+  .chat-wrap, .chat-sheet-overlay, .chat-lightbox{-webkit-tap-highlight-color:transparent;}
   .chat-wrap{
+    position:relative;
     flex:1;min-height:0;display:flex;flex-direction:column;
     width:100%;max-width:680px;margin:0 auto;
   }
+  .chat-wrap.drop-target::after{
+    content:'drop to add it';position:absolute;inset:8px;border:2px dashed var(--pink);border-radius:20px;
+    display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.86);
+    color:var(--pink-dark);font-size:13px;font-weight:600;z-index:40;pointer-events:none;
+  }
+  .chat-head{
+    flex:0 0 auto;display:flex;align-items:center;gap:8px;
+    padding:8px 12px 6px 20px;min-height:46px;
+  }
+  .chat-head-dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto;}
+  .chat-head-name{font-size:14px;font-weight:600;color:var(--ink);}
+  .chat-head-status{font-size:11.5px;color:var(--gray);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .chat-icon-btn{
+    flex:0 0 auto;width:36px;height:36px;border-radius:50%;border:none;background:none;padding:0;
+    display:flex;align-items:center;justify-content:center;color:var(--gray);cursor:pointer;
+    transition:background .15s ease, color .15s ease;
+  }
+  .chat-icon-btn svg{width:22px;height:22px;}
+  .chat-icon-btn:hover, .chat-icon-btn[aria-expanded="true"]{color:var(--pink-dark);background:var(--pink-light);}
+  .chat-icon-btn:focus-visible{outline:2px solid var(--pink);outline-offset:1px;}
+  .chat-icon-btn:disabled{opacity:.35;cursor:default;background:none;color:var(--gray);}
   .chat-scroll{
-    flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;
-    padding:18px 20px 32px;-webkit-overflow-scrolling:touch;
+    flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;
+    padding:10px 20px 32px;-webkit-overflow-scrolling:touch;
   }
   .chat-empty{color:var(--gray);font-size:14px;text-align:center;margin:40px auto 0;max-width:260px;line-height:1.6;}
 
@@ -602,43 +634,178 @@
   .chat-row.group-start{margin-top:12px;}
   .chat-day + .chat-row.group-start{margin-top:0;}
   .chat-row.mine{flex-direction:row-reverse;}
+  .chat-row.has-react{margin-bottom:15px;}
+  /* one message = a column of (edited label, quote, photo, text bubble), with the reaction pill on its corner */
+  .chat-stack{
+    position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:3px;
+    max-width:min(74%, 460px);min-width:0;touch-action:pan-y;
+  }
+  .chat-row.mine .chat-stack{align-items:flex-end;}
   .bubble{
-    max-width:min(74%, 460px);padding:9px 14px;border-radius:18px;
+    max-width:100%;padding:9px 14px;border-radius:18px;
     font-size:14.5px;line-height:1.45;color:var(--ink);
     overflow-wrap:anywhere;word-break:break-word;
   }
   /* ~16% of each person's colour on white */
   .bubble.from-sisi{background:#FDF1F5;}
   .bubble.from-ruirui{background:#EDF9F7;}
-  .chat-row.mine.joined-below .bubble{border-bottom-right-radius:6px;}
-  .chat-row.mine.joined-above .bubble{border-top-right-radius:6px;}
-  .chat-row.theirs.joined-below .bubble{border-bottom-left-radius:6px;}
-  .chat-row.theirs.joined-above .bubble{border-top-left-radius:6px;}
+  .chat-row.mine.joined-below :is(.bubble, .chat-media){border-bottom-right-radius:6px;}
+  .chat-row.mine.joined-above :is(.bubble, .chat-media){border-top-right-radius:6px;}
+  .chat-row.theirs.joined-below :is(.bubble, .chat-media){border-bottom-left-radius:6px;}
+  .chat-row.theirs.joined-above :is(.bubble, .chat-media){border-top-left-radius:6px;}
+  /* a photo with a caption reads as one message: the two pieces meet on the sender's side */
+  .chat-row.mine .chat-media.cap{border-bottom-right-radius:6px;}
+  .chat-row.mine .bubble.cap{border-top-right-radius:6px;}
+  .chat-row.theirs .chat-media.cap{border-bottom-left-radius:6px;}
+  .chat-row.theirs .bubble.cap{border-top-left-radius:6px;}
+  .chat-big{font-size:36px;line-height:1.2;padding:0 2px;}
+  .chat-big.one{font-size:46px;}
+  .chat-edited{font-size:10.5px;color:var(--gray);margin:3px 8px 0;}
   .chat-meta{font-size:10.5px;color:var(--gray);margin:4px 6px 0;}
   .chat-meta.mine{text-align:right;}
   .chat-meta .seen{color:var(--pink-dark);}
 
+  /* reply quote — inside a text bubble, or on its own above a photo / big emoji */
+  .chat-quote{
+    display:block;width:100%;text-align:left;font-family:'Inter',sans-serif;cursor:pointer;
+    background:rgba(43,42,48,0.045);border:none;border-left:3px solid var(--pink);border-radius:8px;
+    padding:5px 9px 6px;margin:1px 0 6px;color:var(--ink);min-width:120px;
+  }
+  .chat-quote.q-ruirui{border-left-color:#8CD9CC;}
+  .chat-quote .q-name{display:block;font-size:11px;font-weight:600;color:var(--gray);margin-bottom:1px;}
+  .chat-quote .q-text{
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+    font-size:12.5px;line-height:1.4;color:#6E6B74;overflow-wrap:anywhere;
+  }
+  .chat-quote.solo{width:auto;max-width:240px;margin:0;background:#F7F5F8;}
+  .chat-quote:focus-visible{outline:2px solid var(--pink);outline-offset:1px;}
+
+  /* photos & gifs: the box has the right shape before the image arrives, so nothing jumps */
+  .chat-media{
+    position:relative;display:block;max-width:100%;border-radius:18px;overflow:hidden;
+    background:var(--pink-light);cursor:zoom-in;
+    -webkit-touch-callout:none;-webkit-user-select:none;user-select:none;
+  }
+  .chat-media img{display:block;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .25s ease;pointer-events:none;-webkit-user-drag:none;}
+  .chat-media img.ready{opacity:1;}
+  .chat-media img.ready.instant{transition:none;}
+  .chat-media.loading{animation:chat-ph 1.6s ease-in-out infinite;}
+  .chat-media.missing, .chat-media.failed{cursor:default;display:flex;align-items:center;justify-content:center;}
+  .chat-media.missing::after{content:'photo unavailable';font-size:12px;color:var(--gray);}
+  .chat-media.failed::after{content:'couldn’t load';font-size:12px;color:var(--gray);}
+  @keyframes chat-ph{0%,100%{opacity:1;}50%{opacity:.55;}}
+
+  .chat-react{
+    position:absolute;bottom:-14px;z-index:2;display:inline-flex;align-items:center;gap:1px;
+    background:var(--white);border:1px solid var(--border);border-radius:999px;
+    padding:1px 6px;font-size:13px;line-height:20px;height:24px;cursor:pointer;
+    box-shadow:0 3px 8px rgba(43,42,48,0.08);font-family:'Inter',sans-serif;color:var(--gray);
+  }
+  .chat-react .n{font-size:10.5px;font-weight:600;margin-left:2px;}
+  .chat-row.mine .chat-react{right:10px;}
+  .chat-row.theirs .chat-react{left:10px;}
+  .chat-react.pop{animation:chat-pop .38s cubic-bezier(.3,1.6,.5,1);}
+  @keyframes chat-pop{0%{transform:scale(.2);opacity:0;}100%{transform:scale(1);opacity:1;}}
+  .chat-burst{
+    position:absolute;left:50%;top:50%;font-size:34px;line-height:1;pointer-events:none;z-index:3;
+    transform:translate(-50%,-50%) scale(.3);opacity:0;animation:chat-burst .7s ease-out forwards;
+  }
+  @keyframes chat-burst{
+    0%{transform:translate(-50%,-50%) scale(.3);opacity:0;}
+    35%{transform:translate(-50%,-50%) scale(1.15);opacity:1;}
+    100%{transform:translate(-50%,-90%) scale(1);opacity:0;}
+  }
+  .chat-swipe-hint{
+    position:absolute;right:calc(100% + 12px);top:50%;width:28px;height:28px;margin-top:-14px;
+    border-radius:50%;background:var(--pink-light);color:var(--pink-dark);opacity:0;
+    display:flex;align-items:center;justify-content:center;transition:transform .15s ease;
+  }
+  .chat-swipe-hint svg{width:15px;height:15px;}
+  .chat-swipe-hint.armed{transform:scale(1.15);background:var(--pink);color:#fff;}
+
+  .chat-row.enter{animation:chat-in .24s ease-out;}
+  @keyframes chat-in{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  .chat-row.flash :is(.bubble, .chat-media, .chat-big){animation:chat-flash 1.4s ease-out;}
+  @keyframes chat-flash{0%,45%{box-shadow:0 0 0 4px rgba(242,166,192,0.55);}100%{box-shadow:0 0 0 4px rgba(242,166,192,0);}}
+  .chat-row.menu-on :is(.bubble, .chat-media){box-shadow:0 0 0 2px var(--pink-light), 0 6px 18px rgba(43,42,48,0.10);}
+
   .chat-actions{display:flex;align-items:center;gap:2px;flex:0 0 auto;}
-  .chat-del{
-    width:22px;height:22px;border-radius:50%;border:none;background:none;padding:0;
-    color:var(--gray);font-size:15px;line-height:22px;cursor:pointer;
+  .chat-more{
+    width:26px;height:26px;border-radius:50%;border:none;background:none;padding:0;
+    color:var(--gray);font-size:15px;line-height:24px;letter-spacing:1px;cursor:pointer;
     opacity:0;transition:opacity .15s ease, background .15s ease;
   }
-  .chat-row.mine:hover .chat-del, .chat-del:focus-visible{opacity:1;}
-  .chat-del:hover{background:var(--pink-light);color:var(--pink-dark);}
+  .chat-row:hover .chat-more, .chat-more:focus-visible, .chat-row.menu-on .chat-more{opacity:1;}
+  .chat-more:hover{background:var(--pink-light);color:var(--pink-dark);}
   .chat-actions .link-btn{font-size:11.5px;padding:4px 5px;min-height:0;}
   .chat-actions .danger-link{color:#C75C74;}
   .chat-actions .danger-link:hover{color:#B14A61;}
   @media (hover: none){
-    .chat-del{display:none;}
-    /* long-press is the delete gesture on touch, so keep the OS callout off your own bubbles */
-    .chat-row.mine .bubble{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
+    .chat-more{display:none;}
+    /* long-press opens the action bar on touch, so keep the OS callout and text selection off bubbles */
+    .chat-stack{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
   }
 
-  .chat-composer{
-    position:relative;flex:0 0 auto;display:flex;align-items:flex-end;gap:8px;
-    padding:8px 16px max(12px, env(safe-area-inset-bottom));background:var(--white);
+  /* long-press / ⋯ action bar: six quick reactions, then reply / copy / edit / unsend */
+  .chat-menu{
+    position:absolute;z-index:30;display:none;background:var(--white);
+    border:1px solid var(--border);border-radius:20px;padding:5px;
+    box-shadow:0 14px 34px rgba(43,42,48,0.16);
   }
+  .chat-menu.open{display:block;animation:chat-menu-in .16s ease-out;}
+  @keyframes chat-menu-in{from{opacity:0;transform:scale(.96);}to{opacity:1;transform:none;}}
+  .chat-menu-reacts{display:flex;gap:1px;}
+  .chat-menu-reacts button{
+    width:39px;height:39px;border-radius:50%;border:none;background:none;padding:0;cursor:pointer;
+    font-size:23px;line-height:39px;transition:transform .12s ease, background .12s ease;
+  }
+  .chat-menu-reacts button:hover{transform:scale(1.14);background:var(--pink-light);}
+  .chat-menu-reacts button.on{background:var(--pink-light);box-shadow:inset 0 0 0 1.5px var(--pink);}
+  .chat-menu-acts{display:flex;border-top:1px solid var(--border);margin-top:5px;padding-top:4px;}
+  .chat-menu-acts button{
+    flex:1 1 0;border:none;background:none;border-radius:12px;cursor:pointer;
+    font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;color:var(--ink);padding:8px 4px;
+  }
+  .chat-menu-acts button:hover{background:var(--pink-light);color:var(--pink-dark);}
+  .chat-menu-acts button.danger{color:#C75C74;}
+  .chat-menu button:focus-visible{outline:2px solid var(--pink);outline-offset:-2px;}
+
+  /* everything below the list: status line, tray (reply / edit / photo), composer */
+  .chat-dock{position:relative;flex:0 0 auto;background:var(--white);}
+  .chat-tray{display:flex;flex-direction:column;gap:6px;padding:4px 16px 0;}
+  .chat-tray:empty{display:none;}
+  .chat-bar{
+    display:flex;align-items:center;gap:10px;min-height:40px;
+    background:#F8F6F9;border-radius:14px;padding:5px 4px 5px 12px;border-left:3px solid var(--pink);
+  }
+  .chat-bar.b-ruirui{border-left-color:#8CD9CC;}
+  .chat-bar-text{flex:1;min-width:0;font-size:12px;line-height:1.35;}
+  .chat-bar-text b{display:block;font-weight:600;color:var(--ink);font-size:12px;}
+  .chat-bar-text span{display:block;color:var(--gray);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .chat-x{
+    flex:0 0 auto;width:30px;height:30px;border-radius:50%;border:none;background:none;cursor:pointer;
+    color:var(--gray);font-size:18px;line-height:30px;padding:0;
+  }
+  .chat-x:hover{background:var(--pink-light);color:var(--pink-dark);}
+  .chat-attach{display:flex;align-items:center;gap:10px;}
+  .chat-chip{
+    position:relative;flex:0 0 auto;width:58px;height:58px;border-radius:14px;overflow:visible;
+  }
+  .chat-chip img{width:100%;height:100%;object-fit:cover;border-radius:14px;display:block;border:1px solid var(--border);}
+  .chat-chip .chat-x{
+    position:absolute;top:-8px;right:-8px;width:22px;height:22px;line-height:20px;font-size:14px;
+    background:var(--white);border:1px solid var(--border);box-shadow:0 2px 6px rgba(0,0,0,0.10);
+  }
+  .chat-attach-note{font-size:12px;color:var(--gray);}
+  .chat-attach.sending .chat-chip{opacity:.55;}
+  .chat-attach.sending .chat-chip .chat-x{display:none;}
+
+  .chat-composer{
+    position:relative;display:flex;align-items:flex-end;gap:6px;
+    padding:8px 16px max(12px, env(safe-area-inset-bottom)) 10px;background:var(--white);
+  }
+  .chat-photo-btn{margin-bottom:2px;}
+  .chat-field{position:relative;flex:1;min-width:0;}
   .chat-status{
     position:absolute;left:16px;right:16px;bottom:100%;height:26px;padding:0 8px 4px;
     display:flex;align-items:flex-end;justify-content:space-between;gap:10px;
@@ -650,13 +817,14 @@
   .chat-typing.show{opacity:1;}
   .chat-count.near{color:var(--pink-dark);}
   #chatInput{
-    flex:1;min-width:0;resize:none;display:block;
+    width:100%;resize:none;display:block;
     border:1.5px solid var(--border);border-radius:20px;
-    padding:9px 16px;min-height:40px;max-height:104px;
+    padding:9px 42px 9px 16px;min-height:40px;max-height:104px;
     font-family:'Inter',sans-serif;font-size:15px;line-height:20px;color:var(--ink);
     background:var(--white);outline:none;overflow-y:hidden;
   }
   #chatInput:focus{border-color:var(--pink);}
+  .chat-emoji-btn{position:absolute;right:3px;bottom:2px;}
   .chat-send{
     flex:0 0 auto;width:40px;height:40px;border-radius:50%;border:none;
     background:var(--pink);color:white;cursor:pointer;padding:0;
@@ -667,6 +835,9 @@
   .chat-send:active{transform:scale(.94);}
   .chat-send:disabled{background:var(--border);cursor:default;transform:none;}
   .chat-send svg{width:18px;height:18px;}
+  .chat-send .icon-save{display:none;}
+  .chat-composer.editing .chat-send .icon-send{display:none;}
+  .chat-composer.editing .chat-send .icon-save{display:block;}
   .chat-send:focus-visible, .chat-new-pill:focus-visible{outline:2px solid var(--pink);outline-offset:2px;}
 
   .chat-new-pill{
@@ -678,20 +849,111 @@
   }
   .chat-new-pill.show{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0);}
 
+  /* emoji (and optional GIF) panel, above the composer */
+  .chat-panel{
+    position:absolute;right:12px;bottom:calc(100% + 4px);z-index:25;
+    width:min(352px, calc(100% - 24px));height:312px;
+    display:none;flex-direction:column;overflow:hidden;background:var(--white);
+    border:1px solid var(--border);border-radius:20px;box-shadow:0 16px 36px rgba(43,42,48,0.15);
+  }
+  .chat-panel.open{display:flex;animation:chat-menu-in .16s ease-out;}
+  .chat-panel-tabs{
+    flex:0 0 auto;display:flex;gap:0;padding:4px 6px 0;border-bottom:1px solid var(--border);
+    overflow-x:auto;scrollbar-width:none;
+  }
+  .chat-panel-tabs::-webkit-scrollbar{display:none;}
+  .chat-panel-tabs button{
+    flex:1 0 auto;min-width:34px;height:36px;border:none;background:none;cursor:pointer;padding:0 4px;
+    font-size:17px;border-bottom:2px solid transparent;filter:grayscale(1);opacity:.6;
+    transition:opacity .15s ease, filter .15s ease;
+  }
+  .chat-panel-tabs button:hover{opacity:1;filter:none;}
+  .chat-panel-tabs button.active{opacity:1;filter:none;border-bottom-color:var(--pink);}
+  .chat-panel-tabs .gif-tab{font-family:'Inter',sans-serif;font-size:11.5px;font-weight:700;letter-spacing:0.04em;color:var(--ink);}
+  .chat-panel-body{flex:1;min-height:0;overflow-y:auto;padding:2px 8px 10px;overscroll-behavior:contain;}
+  .chat-emo-label{font-size:11px;font-weight:600;color:var(--gray);padding:10px 5px 4px;}
+  .chat-emo-grid{display:grid;grid-template-columns:repeat(8, 1fr);}
+  .chat-emo-grid button{
+    aspect-ratio:1;border:none;background:none;border-radius:10px;cursor:pointer;padding:0;
+    font-size:24px;line-height:1;display:flex;align-items:center;justify-content:center;
+  }
+  .chat-emo-grid button:hover{background:var(--pink-light);}
+  .chat-gif-search{
+    width:100%;margin:8px 0 8px;padding:8px 14px;border-radius:999px;border:1.5px solid var(--border);
+    font-family:'Inter',sans-serif;font-size:14px;outline:none;color:var(--ink);background:var(--white);
+  }
+  .chat-gif-search:focus{border-color:var(--pink);}
+  .chat-gif-grid{display:grid;grid-template-columns:repeat(3, 1fr);gap:4px;}
+  .chat-gif-grid button{
+    border:none;padding:0;background:var(--pink-light);border-radius:8px;overflow:hidden;cursor:pointer;height:88px;
+  }
+  .chat-gif-grid img{width:100%;height:100%;object-fit:cover;display:block;}
+  .chat-gif-note{font-size:11.5px;color:var(--gray);text-align:center;padding:16px 8px;}
+  .chat-gif-credit{font-size:10px;color:var(--gray);text-align:right;padding:6px 2px 0;letter-spacing:0.03em;}
+
   .chat-nudge-icon{width:22px;height:18px;flex:0 0 auto;}
   .letters-nudge.show + .chat-nudge{margin-top:10px;}
 
+  /* full-screen photo */
+  .chat-lightbox{
+    position:fixed;inset:0;z-index:9000;display:none;align-items:center;justify-content:center;
+    background:rgba(24,22,28,0.95);padding:max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+    cursor:zoom-out;
+  }
+  .chat-lightbox.open{display:flex;animation:chat-fade .18s ease-out;}
+  .chat-lightbox img{max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;}
+  @keyframes chat-fade{from{opacity:0;}to{opacity:1;}}
+
+  /* notification settings sheet (bottom sheet on a phone, a card on a laptop) */
+  .chat-sheet-overlay{
+    position:fixed;inset:0;z-index:8000;display:none;align-items:center;justify-content:center;
+    background:rgba(43,42,48,0.32);padding:20px;
+  }
+  .chat-sheet-overlay.open{display:flex;animation:chat-fade .18s ease-out;}
+  .chat-sheet{
+    width:100%;max-width:440px;max-height:calc(100% - 20px);overflow-y:auto;background:var(--white);
+    border-radius:22px;padding:18px 22px 22px;box-shadow:0 24px 60px rgba(43,42,48,0.22);
+    animation:chat-sheet-in .22s ease-out;
+  }
+  @keyframes chat-sheet-in{from{transform:translateY(16px);opacity:.6;}to{transform:none;opacity:1;}}
+  .sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+  .sheet-head h2{font-size:18px;margin:0;color:var(--ink);}
+  .sheet-close{width:34px;height:34px;border-radius:50%;border:none;background:none;font-size:22px;color:var(--gray);cursor:pointer;line-height:34px;padding:0;}
+  .sheet-close:hover{background:var(--pink-light);color:var(--pink-dark);}
+  .sheet-section{padding:14px 0 4px;}
+  .sheet-section .sheet-label{font-size:10.5px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--gray);margin:0 0 8px;line-height:1.4;}
+  .sheet-section p{font-size:13.5px;line-height:1.55;color:var(--ink);margin:0 0 10px;}
+  .sheet-section p.quiet{color:var(--gray);font-size:12.5px;}
+  .sheet-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:40px;}
+  .sheet-row span{font-size:13.5px;color:var(--ink);}
+  .sheet-btn{
+    background:var(--pink);color:#fff;border:none;border-radius:999px;cursor:pointer;
+    font-family:'Inter',sans-serif;font-size:13px;font-weight:600;padding:10px 18px;min-height:40px;
+  }
+  .sheet-btn:hover{background:var(--pink-dark);}
+  .sheet-btn.ghost{background:var(--white);color:var(--ink);border:1px solid var(--border);}
+  .sheet-btn.ghost:hover{border-color:var(--pink);color:var(--pink-dark);}
+
   @media (max-width:520px){
-    .chat-scroll{padding:14px 14px 32px;}
-    .chat-composer{padding-left:12px;padding-right:12px;}
+    .chat-head{padding-left:16px;padding-right:8px;}
+    .chat-scroll{padding:8px 14px 32px;}
+    .chat-composer{padding-left:8px;padding-right:12px;gap:4px;}
+    .chat-tray{padding-left:12px;padding-right:12px;}
     .chat-status{left:12px;right:12px;}
-    .bubble{max-width:80%;}
+    .chat-stack{max-width:80%;}
+    .chat-panel{right:8px;width:calc(100% - 16px);}
+    .chat-sheet-overlay{align-items:flex-end;padding:0;}
+    .chat-sheet{max-width:none;border-radius:22px 22px 0 0;max-height:90%;padding-bottom:max(22px, env(safe-area-inset-bottom));}
     /* five tabs on a phone — tighten so they stay clear of the pills either side */
     nav.tabs{gap:0;}
     nav.tabs button{padding:10px 6px 14px;font-size:13.5px;}
     nav.tabs button.active::after{left:5px;right:5px;}
     nav.tabs .tab-badge{margin-left:3px;padding:3px 5px;}
     .presence-label{display:none;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .chat-row.enter, .chat-react.pop, .chat-burst, .chat-menu.open, .chat-panel.open, .chat-sheet, .chat-media.loading{animation:none;}
+    .chat-burst{display:none;}
   }
 
   @media (max-width:380px){
@@ -943,21 +1205,44 @@
       </section>
 
       <section id="tab-chat" class="panel">
-        <div class="chat-wrap">
+        <div class="chat-wrap" id="chatWrap">
+          <div class="chat-head">
+            <span class="chat-head-dot" id="chatHeadDot"></span>
+            <span class="chat-head-name" id="chatHeadName"></span>
+            <span class="chat-head-status" id="chatHeadStatus"></span>
+            <button type="button" class="chat-icon-btn chat-bell" id="chatBellBtn" title="Notifications" aria-label="Notifications">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6.5 16.5V11a5.5 5.5 0 0 1 11 0v5.5l1.5 1.8H5l1.5-1.8z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M10 20.2a2.2 2.2 0 0 0 4 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            </button>
+          </div>
           <div class="chat-scroll" id="chatScroll">
             <div class="chat-list" id="chatList"></div>
           </div>
-          <form class="chat-composer" id="chatComposer" autocomplete="off">
+          <div class="chat-menu" id="chatMenu" role="menu"></div>
+          <div class="chat-dock" id="chatDock">
             <div class="chat-status" aria-live="polite">
               <span class="chat-typing" id="chatTyping"></span>
               <span class="chat-count" id="chatCount"></span>
             </div>
             <button type="button" class="chat-new-pill" id="chatNewPill">new message ↓</button>
-            <textarea id="chatInput" rows="1" maxlength="1000" enterkeyhint="send" placeholder="Message them" aria-label="Message"></textarea>
-            <button type="submit" class="chat-send" id="chatSendBtn" disabled aria-label="Send">
-              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 16V4.5M10 4.5L5 9.5M10 4.5l5 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-          </form>
+            <div class="chat-panel" id="chatPanel"></div>
+            <div class="chat-tray" id="chatTray"></div>
+            <form class="chat-composer" id="chatComposer" autocomplete="off">
+              <button type="button" class="chat-icon-btn chat-photo-btn" id="chatPhotoBtn" title="Add a photo" aria-label="Add a photo">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.2" y="4.6" width="17.6" height="14.8" rx="3.4" stroke="currentColor" stroke-width="1.7"/><circle cx="9" cy="10" r="1.7" fill="currentColor"/><path d="M4 17.2l4.6-4.4 3.4 3 2.6-2.3L20 18" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/></svg>
+              </button>
+              <div class="chat-field">
+                <textarea id="chatInput" rows="1" maxlength="1000" enterkeyhint="send" placeholder="Message them" aria-label="Message"></textarea>
+                <button type="button" class="chat-icon-btn chat-emoji-btn" id="chatEmojiBtn" title="Emoji" aria-label="Emoji" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.6" stroke="currentColor" stroke-width="1.7"/><circle cx="9.2" cy="10.2" r="1.15" fill="currentColor"/><circle cx="14.8" cy="10.2" r="1.15" fill="currentColor"/><path d="M8.6 14.2a4 4 0 0 0 6.8 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                </button>
+              </div>
+              <button type="submit" class="chat-send" id="chatSendBtn" disabled aria-label="Send">
+                <svg class="icon-send" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 16V4.5M10 4.5L5 9.5M10 4.5l5 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <svg class="icon-save" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4.5 10.5l3.6 3.6 7.4-8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </form>
+            <input type="file" id="chatFileInput" accept="image/*" hidden />
+          </div>
         </div>
       </section>
 
@@ -1052,6 +1337,18 @@
     </div>
   </div>
 
+  <!-- CHAT: notification settings sheet + photo lightbox -->
+  <div class="chat-sheet-overlay" id="notifySheet" aria-hidden="true">
+    <div class="chat-sheet" role="dialog" aria-modal="true" aria-labelledby="notifySheetTitle">
+      <div class="sheet-head">
+        <h2 id="notifySheetTitle">Notifications</h2>
+        <button type="button" class="sheet-close" id="notifySheetClose" aria-label="Close">×</button>
+      </div>
+      <div id="notifySheetBody"></div>
+    </div>
+  </div>
+  <div class="chat-lightbox" id="chatLightbox" aria-hidden="true"><img alt="" /></div>
+
 <script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-auth-compat.js"></script>
@@ -1075,7 +1372,12 @@ firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
 const CONFIG = {
   LOGIN_EMAIL: "us@sisiruirui.com", // the one Firebase Auth account the two of you share — the password lives in Firebase, not here
   anniversary: { day: 3, month: 8 }, // August 3rd — already set
-  startedDating: { year: 2026, month: 8, day: 3, hour: 23, minute: 32 } // ✏️ EDIT: set the correct year — day/time already set to Aug 3rd, 11:32 PM
+  startedDating: { year: 2026, month: 8, day: 3, hour: 23, minute: 32 }, // ✏️ EDIT: set the correct year — day/time already set to Aug 3rd, 11:32 PM
+  // GIF search in the chat's emoji panel. Leave empty to hide it completely.
+  // To turn it on: sign up (free) at https://developers.giphy.com → Dashboard → Create an App →
+  // choose "API" → copy the API key into the quotes below. The key is public by design (it only
+  // allows searching GIPHY), so it's fine in this file.
+  GIPHY_KEY: ""
 };
 const WIPE_PHRASE = "wipe the board";
 // sha256 of the normalised answer — to change it run: node -e 'console.log(require("crypto").createHash("sha256").update("your new answer").digest("hex"))'
@@ -3958,14 +4260,12 @@ function updateLetterIndicators(){
 function announceLetter(l){
   const name = characterLabel(l.from);
   showToast(`a letter from ${name} just arrived`);
-  try{
-    if(document.hidden && 'Notification' in window && Notification.permission === 'granted'){
-      new Notification(`a letter from ${name}`, {
-        body: l.subject && l.subject.trim() ? l.subject : 'It’s waiting for you.',
-        tag: 'letter-' + l.id
-      });
-    }
-  } catch(e){ console.warn('notification failed:', e); }
+  if(document.hidden){
+    showSystemNotification(`a letter from ${name}`, {
+      body: l.subject && l.subject.trim() ? l.subject : 'It’s waiting for you.',
+      tag: 'letter-' + l.id
+    });
+  }
 }
 
 function updateNotifyBtn(){
@@ -3981,6 +4281,7 @@ function updateNotifyBtn(){
     btn.textContent = 'notify me when letters or messages arrive';
     btn.disabled = false;
   }
+  if(notifySheetOpen()) renderNotifySheet(); // the chat's notification sheet shows the same permission
 }
 function requestLetterNotifications(){
   try{
@@ -3990,24 +4291,54 @@ function requestLetterNotifications(){
 
 // ---------- Chat ----------
 // The fast, everyday counterpart to letters: short messages, live for both of us.
-// Shape: { from, to, text (≤1000), createdAt: ms, readAt: null|ms }
-// Typing rides on the existing liveState/{clientId} doc as { typing, typingAt }, always written
-// with merge so the cursor fields survive (and the doc stays within the rules' 8-field cap).
+// messages/{auto} = { from, to, text (≤1000), createdAt: ms, readAt: null|ms } — the original shape.
+// Everything below is optional, so older messages (which have none of it) render exactly as before:
+//   image:     { id, w, h }      the picture itself is in chatImages/{id} = { value: dataURL } (like board photos)
+//   gif:       { url, w, h }     a GIPHY url (https://media*.giphy.com only); no chatImages doc
+//   reactions: { sisi?, ruirui? } one emoji each; taking yours back deletes your key
+//   replyTo:   { id, from, text (≤120), kind:'text'|'image'|'gif' } a snapshot, so it outlives the original
+//   editedAt:  ms
+// Typing and "has the chat open" ride on liveState/{clientId} as { typing, typingAt, chatOpen, chatOpenAt },
+// always written with merge so the board-cursor fields survive.
 const CHAT_MAX = 1000;
 const CHAT_LIMIT = 200;           // newest N are loaded; anything older stays in Firestore
 const CHAT_GROUP_MS = 5 * 60000;  // same sender within 5 minutes shares one timestamp
 const CHAT_NEAR_BOTTOM_PX = 80;
 const TYPING_WRITE_MS = 2000, TYPING_IDLE_MS = 3000, TYPING_SHOW_MS = 5000;
+const CHAT_REACTIONS = ['❤️', '😂', '😮', '😢', '😡', '👍'];
+const CHAT_LONG_PRESS_MS = 450, CHAT_DOUBLE_TAP_MS = 280, CHAT_SWIPE_PX = 60;
+const CHAT_OPEN_BEAT_MS = 20000;  // while the chat is open, refresh liveState.chatOpenAt this often...
+const CHAT_OPEN_FRESH_MS = 45000; // ...and treat the partner as "in the chat" for this long after we last saw it move
+const CHAT_DATA_URL_RE = /^data:image\/(jpeg|png|gif|webp);base64,/;
+const REPLY_ICON = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.5 3.5L2.5 7.5l4 4M3 7.5h6.5a4 4 0 0 1 4 4v1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 let messages = [];                // ascending by createdAt
 let knownMessageIds = null;       // null until the first snapshot, so history doesn't announce itself
 let chatPinned = true;            // was the list at (or near) the bottom when we last looked
 let chatSavedScrollTop = 0;
-let chatConfirmId = null, chatConfirmAt = 0; // message showing its inline "delete / keep" step
+let chatConfirmId = null, chatConfirmAt = 0; // message showing its inline "unsend / keep" step
 let lastChatReadWrite = 0, chatReadTimer = null;
 let lastChatRenderDay = null;
 let typingOn = false, lastTypingWrite = 0, typingIdleTimer = null;
 let partnerTyping = {};           // liveState clientId -> { typingAt, seenAt }
 let typingHideTimer = null;
+let chatImageUrls = {};           // chatImages id -> object URL (or 'missing'), so each photo downloads once
+let chatImageLoads = {};          // chatImages id -> in-flight load
+let chatImgObserver = null;
+let chatGifLoaded = new Set();    // gif urls already shown once (no fade-in the second time)
+let chatPending = null;           // photo waiting in the composer: { dataUrl, w, h, url, gif }
+let chatSending = false;          // that photo is uploading
+let chatReply = null;             // replyTo snapshot for the next message
+let chatEditId = null, chatStash = null; // message being edited, and the draft it pushed aside
+let chatCaret = null;             // last caret in the composer, for emoji inserted while it isn't focused
+let chatActionId = null, chatActionScroll = 0;
+let chatDismissPointer = null;    // the press that just closed a menu, so it doesn't also act on a message
+let chatLongPressAt = 0;          // when a long-press last let go (its trailing click is ignored)
+let chatTimeId = null;            // message whose full timestamp was tapped open
+let chatFlashId = null, chatFlashUntil = 0;
+let chatRenderedIds = null;       // ids in the last render — anything new slides in
+let chatReactSigs = {};           // id -> reactions at the last render — a change pops the pill
+let partnerChat = {};             // liveState clientId -> { at, seenAt } while their chat tab is open
+let chatOpenWritten = null;
 
 function chatTabActive(){
   const panel = document.getElementById('tab-chat');
@@ -4015,6 +4346,12 @@ function chatTabActive(){
 }
 function isChatOpen(){ return chatTabActive() && !document.hidden; }
 function unreadMessages(){ return messages.filter(m => m.to === myCharacter && !m.readAt); }
+function touchUI(){ return window.matchMedia('(hover: none)').matches; }
+function haptic(){ try{ if(navigator.vibrate) navigator.vibrate(8); } catch(e){} }
+function findMessage(id){ return messages.find(m => m.id === id) || null; }
+function chatRowEl(id){
+  return id ? document.querySelector(`#chatList .chat-row[data-id="${CSS.escape(id)}"]`) : null;
+}
 
 // Letters and chat both feed the "(n)" in the browser tab, so neither one owns the title.
 function updateDocumentTitle(){
@@ -4044,11 +4381,50 @@ function chatBubbleSvg(char){
   </svg>`;
 }
 
+// --- what a message is made of (every field optional, every value checked before it's used) ---
+function chatText(m){ return typeof m.text === 'string' ? m.text : ''; }
+function chatImageIdOk(id){ return typeof id === 'string' && /^[A-Za-z0-9_-]{1,80}$/.test(id); }
+// GIFs are only ever shown from GIPHY's media hosts, over https
+function safeGifUrl(u){
+  try{
+    const x = new URL(String(u));
+    return (x.protocol === 'https:' && /^media\d*\.giphy\.com$/i.test(x.hostname)) ? x.href : null;
+  } catch(e){ return null; }
+}
+function chatMedia(m){
+  if(m.image && chatImageIdOk(m.image.id)) return { kind:'image', id: m.image.id, w: m.image.w, h: m.image.h };
+  if(m.gif){
+    const url = safeGifUrl(m.gif.url);
+    if(url) return { kind:'gif', url, w: m.gif.w, h: m.gif.h };
+  }
+  return null;
+}
+function chatKind(m){ const md = chatMedia(m); return md ? md.kind : 'text'; }
+function chatSummary(m){ const k = chatKind(m); return k === 'image' ? 'sent a photo' : k === 'gif' ? 'sent a gif' : 'sent a message'; }
+function chatReactions(m){
+  const r = (m.reactions && typeof m.reactions === 'object') ? m.reactions : {};
+  const out = {};
+  ['sisi', 'ruirui'].forEach(c=>{ if(typeof r[c] === 'string' && r[c] && r[c].length <= 16) out[c] = r[c]; });
+  return out;
+}
+// 1–3 emoji and nothing else (spaces allowed) → shown big, without a bubble
+const EMOJI_SEQ_RE = /(?:\p{Regional_Indicator}{2}|[#*0-9]️?⃣|\p{Extended_Pictographic}(?:️|\p{Emoji_Modifier})?(?:‍\p{Extended_Pictographic}(?:️|\p{Emoji_Modifier})?)*)/gu;
+function emojiOnlyCount(text){
+  const t = String(text || '').replace(/\s+/g, '');
+  if(!t || t.length > 48) return 0;
+  const found = t.match(EMOJI_SEQ_RE);
+  if(!found || found.length > 3) return 0;
+  return t.replace(EMOJI_SEQ_RE, '').replace(/[️‍]/g, '') === '' ? found.length : 0;
+}
+
 function setupChat(){
   const input = document.getElementById('chatInput');
   const scroller = document.getElementById('chatScroll');
   const list = document.getElementById('chatList');
+  const wrap = document.getElementById('chatWrap');
   input.placeholder = 'Message ' + characterLabel(otherCharacterKey());
+  document.getElementById('chatHeadName').textContent = characterLabel(otherCharacterKey());
+  document.getElementById('chatHeadDot').style.background = otherCharacterKey() === 'ruirui' ? '#8CD9CC' : '#F2A6C0';
 
   document.getElementById('chatComposer').addEventListener('submit', e=>{ e.preventDefault(); sendChatMessage(); });
   // keep focus (and the phone keyboard) in the input when the send button is tapped
@@ -4065,38 +4441,134 @@ function setupChat(){
     updateChatComposerState();
     if(input.value.trim()) noteMyTyping(); else stopMyTyping();
   });
+  const rememberCaret = ()=>{ chatCaret = { s: input.selectionStart, e: input.selectionEnd }; };
+  ['input', 'keyup', 'click', 'select', 'focus'].forEach(t=> input.addEventListener(t, rememberCaret));
+  input.addEventListener('focus', ()=>{ if(touchUI()) closeChatPanel(); });
+
+  // photos: the button, a paste into the composer, or a drop anywhere on the chat
+  const fileInput = document.getElementById('chatFileInput');
+  document.getElementById('chatPhotoBtn').addEventListener('click', ()=>{ closeChatPanel(); fileInput.click(); });
+  fileInput.addEventListener('change', ()=>{
+    const f = fileInput.files && fileInput.files[0];
+    fileInput.value = '';
+    if(f) attachChatImage(f);
+  });
+  // The board's document-level paste handler ignores the chat (wrong tab, and the composer is a
+  // text field), so the composer handles its own. Text pastes are left alone unless the clipboard
+  // is really an image (a copied picture, or a screenshot).
+  input.addEventListener('paste', e=>{
+    const cd = e.clipboardData;
+    if(!cd) return;
+    const file = Array.from(cd.items || []).find(it => it.kind === 'file' && it.type.startsWith('image/'));
+    if(!file) return;
+    const text = (cd.getData('text/plain') || '').trim();
+    if(text && !/<img[\s>]/i.test(cd.getData('text/html') || '')) return; // e.g. a spreadsheet range: paste the text
+    const f = file.getAsFile();
+    if(!f) return;
+    e.preventDefault();
+    attachChatImage(f);
+  });
+  const hasFiles = (e)=> !!e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
+  // stopPropagation: the board's document-level dragover marks drops outside the board as "not allowed"
+  wrap.addEventListener('dragover', e=>{
+    if(!hasFiles(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'copy';
+    wrap.classList.add('drop-target');
+  });
+  wrap.addEventListener('dragleave', e=>{
+    if(e.relatedTarget && wrap.contains(e.relatedTarget)) return;
+    wrap.classList.remove('drop-target');
+  });
+  wrap.addEventListener('drop', e=>{
+    wrap.classList.remove('drop-target');
+    if(!hasFiles(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const imgs = Array.from(e.dataTransfer.files || []).filter(f => (f.type || '').startsWith('image/'));
+    if(!imgs.length){ showToast('only photos can go in the chat'); return; }
+    if(imgs.length > 1) showToast('one photo at a time — added the first');
+    attachChatImage(imgs[0]);
+  });
+
+  // tray: the reply / editing bar and the photo waiting to be sent
+  const tray = document.getElementById('chatTray');
+  tray.addEventListener('mousedown', e=>{ if(e.target.closest('button')) e.preventDefault(); });
+  tray.addEventListener('click', e=>{
+    const b = e.target.closest('[data-tray]');
+    if(!b) return;
+    if(b.dataset.tray === 'cancel-reply'){ chatReply = null; renderChatTray(); }
+    else if(b.dataset.tray === 'cancel-edit') endChatEdit();
+    else if(b.dataset.tray === 'drop-photo'){ clearChatPending(); renderChatTray(); }
+  });
+
+  // emoji / GIF panel
+  const panel = document.getElementById('chatPanel');
+  document.getElementById('chatEmojiBtn').addEventListener('mousedown', e=> e.preventDefault());
+  document.getElementById('chatEmojiBtn').addEventListener('click', toggleChatPanel);
+  panel.addEventListener('mousedown', e=>{ if(!e.target.closest('input')) e.preventDefault(); });
+  panel.addEventListener('click', onChatPanelClick);
+
+  // the long-press / ⋯ action bar
+  document.getElementById('chatMenu').addEventListener('click', onChatMenuClick);
 
   scroller.addEventListener('scroll', ()=>{
     chatSavedScrollTop = scroller.scrollTop;
     chatPinned = chatNearBottom();
     if(chatPinned) hideNewPill();
+    if(chatActionId && Math.abs(scroller.scrollTop - chatActionScroll) > 24) closeChatMenu();
   }, { passive:true });
   document.getElementById('chatNewPill').addEventListener('click', ()=>{ scrollChatToBottom(true); hideNewPill(); });
   document.getElementById('chatNudge').addEventListener('click', ()=> switchToTab('chat'));
 
   list.addEventListener('click', e=>{
+    // the click a phone fires when a long-press lets go belongs to the long-press, not to a quote/pill under it
+    if(Date.now() - chatLongPressAt < 700) return;
+    const quote = e.target.closest('.chat-quote');
+    if(quote){ jumpToChatMessage(quote.dataset.jump); return; }
     const btn = e.target.closest('button[data-act]');
     const row = btn && btn.closest('.chat-row');
     if(!row) return;
-    if(btn.dataset.act === 'del') beginChatDelete(row.dataset.id);
-    else if(btn.dataset.act === 'confirm-del') deleteChatMessage(row.dataset.id);
-    else if(btn.dataset.act === 'keep') cancelChatDelete();
+    const act = btn.dataset.act;
+    if(act === 'more' || act === 'react-pill'){
+      if(chatActionId === row.dataset.id) closeChatMenu(); else openChatMenu(row.dataset.id);
+    }
+    else if(act === 'confirm-del') deleteChatMessage(row.dataset.id);
+    else if(act === 'keep') cancelChatDelete();
   });
-  // a tap anywhere else backs out of a half-started delete (the grace period swallows the
-  // click that some phones fire at the end of the long-press that started it)
+  // a tap anywhere else backs out of a half-started unsend (the grace period swallows the
+  // click that some phones fire at the end of the long-press that led to it)
   document.addEventListener('click', e=>{
     if(chatConfirmId && Date.now() - chatConfirmAt > 600 && !e.target.closest('.chat-actions')) cancelChatDelete();
   });
-  setupChatLongPress(scroller);
+  // Menus close on any press outside them (capture, so it runs before whatever that press starts).
+  // A press on the messages that only dismissed something doesn't also count as a tap on them.
+  document.addEventListener('pointerdown', e=>{
+    let dismissed = false;
+    if(chatActionId && !e.target.closest('#chatMenu')){ closeChatMenu(); dismissed = true; }
+    if(panel.classList.contains('open') && !e.target.closest('#chatPanel, #chatEmojiBtn')){ closeChatPanel(); dismissed = true; }
+    chatDismissPointer = (dismissed && e.target.closest('#chatScroll')) ? e.pointerId : null;
+  }, true);
+  document.addEventListener('keydown', onChatEscape);
+  setupChatGestures(scroller);
+
+  const lightbox = document.getElementById('chatLightbox');
+  lightbox.addEventListener('click', closeChatLightbox);
+
+  setupNotifySheet();
 
   // registered after setupTabs, so the panel has already switched when this runs
   document.querySelectorAll('#tabs button').forEach(btn=> btn.addEventListener('click', onChatTabChange));
   document.addEventListener('visibilitychange', ()=>{
     if(document.hidden) stopMyTyping(); else markChatRead();
+    updateMyChatOpen();
   });
   if(window.visualViewport) window.visualViewport.addEventListener('resize', fitChatToViewport);
 
   db.collection('messages').orderBy('createdAt','desc').limit(CHAT_LIMIT).onSnapshot(snap=>{
+    const prevById = {};
+    messages.forEach(m=>{ prevById[m.id] = m; });
     const next = [];
     const arriving = [];
     snap.forEach(doc=>{
@@ -4105,11 +4577,23 @@ function setupChat(){
       if(knownMessageIds && !knownMessageIds.has(m.id) && m.to === myCharacter) arriving.push(m);
     });
     next.reverse();
+    // their reaction to one of mine (a change to an existing doc, so it never counts as unread)
+    let reacted = null;
+    if(knownMessageIds){
+      next.forEach(m=>{
+        const p = prevById[m.id];
+        if(!p || m.from !== myCharacter) return;
+        const now = chatReactions(m)[otherCharacterKey()];
+        if(now && now !== chatReactions(p)[otherCharacterKey()]) reacted = now;
+      });
+    }
     messages = next;
     const firstLoad = !knownMessageIds;
     if(firstLoad) knownMessageIds = new Set();
     messages.forEach(m => knownMessageIds.add(m.id));
     if(chatConfirmId && !messages.some(m => m.id === chatConfirmId)) chatConfirmId = null;
+    if(chatActionId && !messages.some(m => m.id === chatActionId)) closeChatMenu();
+    if(chatEditId && !messages.some(m => m.id === chatEditId)) endChatEdit();
 
     renderChat();
     if(firstLoad || chatPinned){ scrollChatToBottom(); hideNewPill(); }
@@ -4117,8 +4601,13 @@ function setupChat(){
     markChatRead();
     updateChatIndicators();
     if(arriving.length) announceMessage(arriving[arriving.length - 1], arriving.length);
+    else if(reacted) announceReaction(reacted);
   }, e=>console.warn('messages listener failed:', e));
 
+  updateMyChatOpen();
+  setInterval(()=>{ if(isChatOpen()) writeChatOpen(true); }, CHAT_OPEN_BEAT_MS);
+  setInterval(updateChatHead, 10000);
+  updateChatHead();
   // "Today" becomes "Yesterday" at midnight
   setInterval(()=>{ if(chatDayKey(Date.now()) !== lastChatRenderDay) renderChat(); }, 60000);
 }
@@ -4144,7 +4633,10 @@ function onChatTabChange(){
     if(window.matchMedia('(hover: hover)').matches) document.getElementById('chatInput').focus({ preventScroll:true });
   } else {
     stopMyTyping();
+    closeChatMenu();
+    closeChatPanel();
   }
+  updateMyChatOpen();
   fitChatToViewport();
 }
 
@@ -4169,6 +4661,52 @@ function chatJoined(a, b){
     && (b.createdAt - a.createdAt) < CHAT_GROUP_MS;
 }
 
+// --- rendering ---
+// The box gets its final size from w/h before the picture arrives, so nothing jumps as it loads.
+function chatMediaBox(md){
+  let w = Number(md.w), h = Number(md.h);
+  if(!(w > 0) || !(h > 0)){ w = 4; h = 3; }
+  const ratio = Math.max(0.45, Math.min(2.6, w / h));
+  const maxW = window.innerWidth > 520 ? 280 : 240, maxH = 320;
+  let dw = Math.min(maxW, Math.max(w, 140));
+  if(dw / ratio > maxH) dw = maxH * ratio;
+  return { w: Math.round(dw), ratio: ratio.toFixed(4) };
+}
+function chatMediaHtml(md, captioned){
+  const box = chatMediaBox(md);
+  const style = `width:${box.w}px;aspect-ratio:${box.ratio}`;
+  const cls = 'chat-media' + (captioned ? ' cap' : '');
+  if(md.kind === 'gif'){
+    const seen = chatGifLoaded.has(md.url);
+    return `<div class="${cls}" style="${style}"><img src="${escapeHtml(md.url)}" class="${seen ? 'ready instant' : ''}" data-gif-src alt="gif" draggable="false"></div>`;
+  }
+  const url = chatImageUrls[md.id];
+  if(url === 'missing') return `<div class="${cls} missing" style="${style}"></div>`;
+  if(url) return `<div class="${cls}" data-img="${escapeHtml(md.id)}" style="${style}"><img src="${escapeHtml(url)}" class="ready instant" alt="photo" draggable="false"></div>`;
+  return `<div class="${cls} loading" data-img="${escapeHtml(md.id)}" style="${style}"></div>`;
+}
+function chatQuoteHtml(r, solo){
+  if(!r || typeof r !== 'object') return '';
+  const from = r.from === 'ruirui' ? 'ruirui' : 'sisi';
+  const who = from === myCharacter ? 'You' : characterLabel(from);
+  const kind = (r.kind === 'image' || r.kind === 'gif') ? r.kind : 'text';
+  const label = kind === 'image' ? 'Photo' : kind === 'gif' ? 'GIF' : '';
+  const t = chatPreview(typeof r.text === 'string' ? r.text : '', 120);
+  const text = t ? (label ? label + ' · ' + t : t) : (label || 'Message');
+  return `<button type="button" class="chat-quote q-${from}${solo ? ' solo' : ''}" data-jump="${escapeHtml(String(r.id || ''))}" aria-label="Go to the message this replies to"><span class="q-name">${escapeHtml(who)}</span><span class="q-text">${escapeHtml(text)}</span></button>`;
+}
+function chatReactHtml(m, pop){
+  const r = chatReactions(m);
+  const entries = Object.entries(r);
+  if(!entries.length) return '';
+  const vals = entries.map(([, e]) => e);
+  const inner = (vals.length === 2 && vals[0] === vals[1])
+    ? `${escapeHtml(vals[0])}<span class="n">2</span>`
+    : vals.map(escapeHtml).join('');
+  const label = entries.map(([c, e]) => `${c === myCharacter ? 'You' : characterLabel(c)} reacted ${e}`).join(', ');
+  return `<button type="button" class="chat-react${pop ? ' pop' : ''}" data-act="react-pill" title="${escapeHtml(label)}" aria-label="${escapeHtml(label)}">${inner}</button>`;
+}
+
 function renderChat(){
   const list = document.getElementById('chatList');
   if(!list) return;
@@ -4177,12 +4715,16 @@ function renderChat(){
     list.innerHTML = knownMessageIds
       ? `<p class="chat-empty">No messages yet. This is for the small, everyday things.</p>`
       : '';
+    if(knownMessageIds) chatRenderedIds = new Set();
     return;
   }
   // "seen" sits under my latest message only while it's still the last word —
   // once they've replied, it goes without saying.
   const last = messages[messages.length - 1];
   const seenId = (last.from === myCharacter && last.readAt) ? last.id : null;
+  const firstRender = !chatRenderedIds;
+  const flashId = (chatFlashId && Date.now() < chatFlashUntil) ? chatFlashId : null;
+  const ids = new Set(), sigs = {};
   let html = '';
   messages.forEach((m, i)=>{
     const prev = messages[i - 1], next = messages[i + 1];
@@ -4192,26 +4734,150 @@ function renderChat(){
     const mine = m.from === myCharacter;
     const joinedAbove = chatJoined(prev, m);
     const joinedBelow = chatJoined(m, next);
+    const md = chatMedia(m);
+    const text = chatText(m);
+    const big = md ? 0 : emojiOnlyCount(text);
+    const sig = JSON.stringify(chatReactions(m));
+    ids.add(m.id);
+    sigs[m.id] = sig;
+
     const cls = ['chat-row', mine ? 'mine' : 'theirs'];
     cls.push(joinedAbove ? 'joined-above' : 'group-start');
     if(joinedBelow) cls.push('joined-below');
-    let actions = '';
-    if(mine){
-      actions = chatConfirmId === m.id
-        ? `<div class="chat-actions"><button type="button" class="link-btn danger-link" data-act="confirm-del">delete</button><button type="button" class="link-btn" data-act="keep">keep</button></div>`
-        : `<div class="chat-actions"><button type="button" class="chat-del" data-act="del" title="Delete" aria-label="Delete message">×</button></div>`;
-    }
+    if(sig !== '{}') cls.push('has-react');
+    if(!firstRender && !chatRenderedIds.has(m.id)) cls.push('enter');
+    if(flashId === m.id) cls.push('flash');
+    if(chatActionId === m.id) cls.push('menu-on');
+
+    let stack = '';
+    if(m.editedAt) stack += `<span class="chat-edited">edited</span>`;
+    const soloQuote = !!m.replyTo && (!!md || !!big);
+    if(soloQuote) stack += chatQuoteHtml(m.replyTo, true);
+    if(md) stack += chatMediaHtml(md, !!text);
     const tint = m.from === 'ruirui' ? 'from-ruirui' : 'from-sisi';
-    html += `<div class="${cls.join(' ')}" data-id="${escapeHtml(m.id)}"><div class="bubble ${tint}">${bodyToHtml(m.text || '')}</div>${actions}</div>`;
-    if(!joinedBelow){
-      let meta = escapeHtml(chatTimeText(m.createdAt));
+    if(big){
+      stack += `<div class="chat-big${big === 1 ? ' one' : ''}">${escapeHtml(text.trim())}</div>`;
+    } else if(!md || text){
+      const quote = (!soloQuote && m.replyTo) ? chatQuoteHtml(m.replyTo, false) : '';
+      stack += `<div class="bubble ${tint}${md ? ' cap' : ''}">${quote}${bodyToHtml(text)}</div>`;
+    }
+    const pop = !firstRender && sig !== '{}' && chatReactSigs[m.id] !== undefined && chatReactSigs[m.id] !== sig;
+    stack += chatReactHtml(m, pop);
+
+    let actions;
+    if(mine && chatConfirmId === m.id){
+      actions = `<div class="chat-actions"><button type="button" class="link-btn danger-link" data-act="confirm-del">unsend</button><button type="button" class="link-btn" data-act="keep">keep</button></div>`;
+    } else {
+      actions = `<div class="chat-actions"><button type="button" class="chat-more" data-act="more" title="More" aria-label="Message actions">···</button></div>`;
+    }
+    html += `<div class="${cls.join(' ')}" data-id="${escapeHtml(m.id)}"><div class="chat-stack">${stack}</div>${actions}</div>`;
+    if(!joinedBelow || chatTimeId === m.id){
+      let meta = escapeHtml(chatTimeId === m.id ? chatDayText(m.createdAt) + ', ' + chatTimeText(m.createdAt) : chatTimeText(m.createdAt));
       if(m.id === seenId) meta += ' · <span class="seen">seen</span>';
       html += `<div class="chat-meta ${mine ? 'mine' : 'theirs'}">${meta}</div>`;
     }
   });
   list.innerHTML = html;
+  chatRenderedIds = ids;
+  chatReactSigs = sigs;
+  wireChatMedia();
 }
 
+// Photos are fetched only as they come near the screen, then kept (as object URLs) for the session.
+function wireChatMedia(){
+  const scroller = document.getElementById('chatScroll');
+  if(!chatImgObserver && 'IntersectionObserver' in window){
+    chatImgObserver = new IntersectionObserver(entries=>{
+      entries.forEach(en=>{
+        if(!en.isIntersecting) return;
+        chatImgObserver.unobserve(en.target);
+        loadChatImage(en.target.dataset.img);
+      });
+    }, { root: scroller, rootMargin: '600px 0px' });
+  }
+  if(chatImgObserver) chatImgObserver.disconnect();
+  document.querySelectorAll('#chatList .chat-media.loading[data-img]').forEach(el=>{
+    if(chatImgObserver) chatImgObserver.observe(el); else loadChatImage(el.dataset.img);
+  });
+  document.querySelectorAll('#chatList img[data-gif-src]:not(.ready)').forEach(img=>{
+    img.addEventListener('load', ()=>{ chatGifLoaded.add(img.getAttribute('src')); img.classList.add('ready'); }, { once:true });
+  });
+}
+function dataUrlToObjectUrl(dataUrl){
+  const comma = dataUrl.indexOf(',');
+  const type = dataUrl.slice(5, comma).split(';')[0];
+  const bin = atob(dataUrl.slice(comma + 1));
+  const bytes = new Uint8Array(bin.length);
+  for(let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return URL.createObjectURL(new Blob([bytes], { type }));
+}
+function loadChatImage(id){
+  if(!chatImageIdOk(id) || chatImageUrls[id] || chatImageLoads[id]) return;
+  chatImageLoads[id] = db.collection('chatImages').doc(id).get().then(doc=>{
+    const v = doc.exists ? (doc.data() || {}).value : null;
+    chatImageUrls[id] = (typeof v === 'string' && CHAT_DATA_URL_RE.test(v)) ? dataUrlToObjectUrl(v) : 'missing';
+  }).catch(e=>{
+    console.warn('chat photo failed to load:', e);
+  }).then(()=>{
+    delete chatImageLoads[id];
+    fillChatImage(id);
+  });
+}
+function fillChatImage(id){
+  const url = chatImageUrls[id];
+  document.querySelectorAll(`#chatList .chat-media[data-img="${CSS.escape(id)}"]`).forEach(el=>{
+    el.classList.remove('loading');
+    if(!url){ el.classList.add('failed'); return; } // network trouble: the next render tries again
+    if(url === 'missing'){ el.classList.add('missing'); return; }
+    let img = el.querySelector('img');
+    if(!img){
+      img = document.createElement('img');
+      img.alt = 'photo';
+      img.draggable = false;
+      el.appendChild(img);
+    }
+    img.addEventListener('load', ()=> img.classList.add('ready'), { once:true });
+    img.src = url;
+  });
+}
+
+function openChatLightbox(id){
+  const m = findMessage(id);
+  const md = m && chatMedia(m);
+  if(!md) return;
+  const src = md.kind === 'gif' ? md.url : chatImageUrls[md.id];
+  if(!src || src === 'missing') return;
+  const lb = document.getElementById('chatLightbox');
+  lb.querySelector('img').src = src;
+  lb.classList.add('open');
+  lb.setAttribute('aria-hidden', 'false');
+}
+function closeChatLightbox(){
+  const lb = document.getElementById('chatLightbox');
+  if(!lb.classList.contains('open')) return false;
+  lb.classList.remove('open');
+  lb.setAttribute('aria-hidden', 'true');
+  lb.querySelector('img').removeAttribute('src');
+  return true;
+}
+
+function toggleChatTime(id){
+  chatTimeId = chatTimeId === id ? null : id;
+  renderChat();
+}
+function jumpToChatMessage(id){
+  const row = chatRowEl(id);
+  if(!row){
+    showToast(messages.length >= CHAT_LIMIT ? 'that message is too far back' : 'that message was unsent');
+    return;
+  }
+  chatFlashId = id;
+  chatFlashUntil = Date.now() + 1500;
+  row.scrollIntoView({ block:'center', behavior:'smooth' });
+  row.classList.remove('flash'); void row.offsetWidth; row.classList.add('flash');
+}
+
+// --- composer: text, tray (reply / editing / photo), sending ---
 function autosizeChatInput(){
   const input = document.getElementById('chatInput');
   const max = 101; // four 20px lines + padding + border
@@ -4221,34 +4887,650 @@ function autosizeChatInput(){
   input.style.overflowY = h > max ? 'auto' : 'hidden';
   if(chatPinned) scrollChatToBottom();
 }
+function setChatInput(value){
+  const input = document.getElementById('chatInput');
+  input.value = value;
+  chatCaret = null;
+  autosizeChatInput();
+  updateChatComposerState();
+}
 function updateChatComposerState(){
   const input = document.getElementById('chatInput');
-  document.getElementById('chatSendBtn').disabled = input.value.trim().length === 0;
+  const hasText = input.value.trim().length > 0;
+  let can;
+  if(chatEditId){
+    const m = findMessage(chatEditId);
+    can = !!m && (hasText || !!chatMedia(m));
+  } else {
+    can = !chatSending && (hasText || !!chatPending);
+  }
+  const send = document.getElementById('chatSendBtn');
+  send.disabled = !can;
+  send.setAttribute('aria-label', chatEditId ? 'Save' : 'Send');
   const left = CHAT_MAX - input.value.length;
   const count = document.getElementById('chatCount');
   count.textContent = left <= 100 ? left + ' left' : '';
   count.classList.toggle('near', left <= 20);
 }
+function renderChatTray(){
+  const tray = document.getElementById('chatTray');
+  const input = document.getElementById('chatInput');
+  let html = '';
+  if(chatEditId){
+    const m = findMessage(chatEditId);
+    html += `<div class="chat-bar"><div class="chat-bar-text"><b>Editing message</b><span>${escapeHtml(chatPreview(m ? chatText(m) : '', 90) || 'add a caption')}</span></div><button type="button" class="chat-x" data-tray="cancel-edit" aria-label="Stop editing">×</button></div>`;
+  } else if(chatReply){
+    const r = chatReply;
+    const who = r.from === myCharacter ? 'yourself' : characterLabel(r.from);
+    const label = r.kind === 'image' ? 'Photo' : r.kind === 'gif' ? 'GIF' : '';
+    const t = chatPreview(r.text, 90);
+    html += `<div class="chat-bar b-${r.from === 'ruirui' ? 'ruirui' : 'sisi'}"><div class="chat-bar-text"><b>Replying to ${escapeHtml(who)}</b><span>${escapeHtml(t ? (label ? label + ' · ' + t : t) : (label || ''))}</span></div><button type="button" class="chat-x" data-tray="cancel-reply" aria-label="Cancel reply">×</button></div>`;
+  }
+  if(chatPending && !chatEditId){
+    const note = chatSending ? 'sending…' : (chatPending.gif ? 'gif' : 'photo') + ' · add a caption, or just send';
+    html += `<div class="chat-attach${chatSending ? ' sending' : ''}"><div class="chat-chip"><img src="${escapeHtml(chatPending.url)}" alt=""><button type="button" class="chat-x" data-tray="drop-photo" aria-label="Remove photo">×</button></div><span class="chat-attach-note">${escapeHtml(note)}</span></div>`;
+  }
+  tray.innerHTML = html;
+  document.getElementById('chatComposer').classList.toggle('editing', !!chatEditId);
+  document.getElementById('chatPhotoBtn').disabled = !!chatEditId || chatSending;
+  input.placeholder = chatEditId ? 'Edit your message' : chatPending ? 'Add a caption' : 'Message ' + characterLabel(otherCharacterKey());
+  updateChatComposerState();
+  if(chatPinned) scrollChatToBottom();
+}
+function clearChatPending(){
+  if(chatPending && !Object.values(chatImageUrls).includes(chatPending.url)){
+    try{ URL.revokeObjectURL(chatPending.url); } catch(e){}
+  }
+  chatPending = null;
+}
 
-function sendChatMessage(){
+function readFileAsDataUrl(file){
+  return new Promise((resolve, reject)=>{
+    const r = new FileReader();
+    r.onload = ()=> resolve(String(r.result));
+    r.onerror = ()=> reject(r.error);
+    r.readAsDataURL(file);
+  });
+}
+function imageSizeOf(src){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    img.onload = ()=> resolve({ w: img.naturalWidth, h: img.naturalHeight });
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+// Stills go through the board's compressor. A GIF that already fits is kept byte-for-byte so it
+// stays animated; a bigger one is compressed into a still (with a word about why).
+async function prepareChatImage(file){
+  if(file.type === 'image/gif'){
+    const dataUrl = await readFileAsDataUrl(file);
+    if(dataUrl.length <= MAX_PHOTO_DATAURL_LEN && CHAT_DATA_URL_RE.test(dataUrl)){
+      const { w, h } = await imageSizeOf(dataUrl);
+      return { dataUrl, w, h, gif:true };
+    }
+    const still = await fileToDataUrl(file);
+    showToast('that gif was too big to keep animated');
+    return { dataUrl: still.dataUrl, w: still.w, h: still.h, gif:false };
+  }
+  const r = await fileToDataUrl(file);
+  return { dataUrl: r.dataUrl, w: r.w, h: r.h, gif:false };
+}
+async function attachChatImage(file){
+  if(!file || !String(file.type || '').startsWith('image/')){ showToast('only photos can go in the chat'); return; }
+  if(chatEditId){ showToast('finish editing first'); return; }
+  if(chatSending) return;
+  let prepared;
+  try{
+    prepared = await withAddingToast(()=> prepareChatImage(file));
+  } catch(e){
+    console.warn('chat photo failed:', e);
+    showToast("couldn't use that photo — try another one");
+    return;
+  }
+  clearChatPending();
+  prepared.url = dataUrlToObjectUrl(prepared.dataUrl);
+  chatPending = prepared;
+  renderChatTray();
+  if(!touchUI()) document.getElementById('chatInput').focus({ preventScroll:true });
+}
+
+async function sendChatMessage(){
+  if(chatEditId){ saveChatEdit(); return; }
+  if(chatSending || !myCharacter) return;
   const input = document.getElementById('chatInput');
   const text = input.value.trim().slice(0, CHAT_MAX);
-  if(!text || !myCharacter) return;
-  input.value = '';
+  const pending = chatPending;
+  if(!text && !pending) return;
+  const reply = chatReply;
+  const msg = { from: myCharacter, to: otherCharacterKey(), text, createdAt: Date.now(), readAt: null };
+  if(reply) msg.replyTo = reply;
+  stopMyTyping();
+  closeChatPanel();
+  scrollChatToBottom(); // my own message always comes into view
+
+  if(!pending){
+    setChatInput('');
+    chatReply = null;
+    renderChatTray();
+    db.collection('messages').add(msg).catch(e=>{
+      onSyncError(e);
+      // hand it back rather than lose it, unless they've already started typing something else
+      if(!input.value) setChatInput(text);
+      if(reply && !chatReply && !chatEditId){ chatReply = reply; renderChatTray(); }
+    });
+    return;
+  }
+
+  // With a photo: the image doc goes first, and the message only once that has definitely saved.
+  // Until then everything stays in the composer, so a failure loses nothing.
+  chatSending = true;
+  renderChatTray();
+  const imageId = 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  try{
+    await db.collection('chatImages').doc(imageId).set({ value: pending.dataUrl });
+  } catch(e){
+    chatSending = false;
+    renderChatTray();
+    onSyncError(e, 'photo');
+    return;
+  }
+  msg.image = { id: imageId, w: pending.w, h: pending.h };
+  msg.createdAt = Date.now();
+  chatImageUrls[imageId] = pending.url; // ours is already in memory — no need to download it back
+  try{
+    await db.collection('messages').add(msg);
+  } catch(e){
+    delete chatImageUrls[imageId];
+    chatSending = false;
+    renderChatTray();
+    onSyncError(e);
+    db.collection('chatImages').doc(imageId).delete().catch(()=>{}); // don't leave an orphan behind
+    return;
+  }
+  chatSending = false;
+  if(chatPending === pending) chatPending = null; // its object URL now lives on in chatImageUrls
+  if(input.value.trim().slice(0, CHAT_MAX) === text) setChatInput('');
+  if(chatReply === reply) chatReply = null;
+  renderChatTray();
+}
+
+// --- reply / edit / copy / unsend ---
+function beginChatReply(id){
+  const m = findMessage(id);
+  if(!m) return;
+  closeChatMenu();
+  if(chatEditId) endChatEdit();
+  chatReply = { id: m.id, from: m.from === 'ruirui' ? 'ruirui' : 'sisi', text: chatText(m).slice(0, 120), kind: chatKind(m) };
+  renderChatTray();
+  document.getElementById('chatInput').focus({ preventScroll:true });
+}
+function beginChatEdit(id){
+  const m = findMessage(id);
+  if(!m || m.from !== myCharacter) return;
+  closeChatMenu();
+  closeChatPanel();
+  const input = document.getElementById('chatInput');
+  if(!chatEditId) chatStash = { text: input.value, reply: chatReply };
+  chatEditId = id;
+  chatReply = null;
+  setChatInput(chatText(m));
+  renderChatTray();
+  input.focus({ preventScroll:true });
+  const end = input.value.length;
+  try{ input.setSelectionRange(end, end); } catch(e){}
+}
+function endChatEdit(){
+  if(!chatEditId) return;
+  chatEditId = null;
+  const s = chatStash || { text:'', reply:null };
+  chatStash = null;
+  chatReply = s.reply;
+  setChatInput(s.text);
+  renderChatTray();
+}
+function saveChatEdit(){
+  const id = chatEditId;
+  const m = findMessage(id);
+  if(!m){ endChatEdit(); return; }
+  const text = document.getElementById('chatInput').value.trim().slice(0, CHAT_MAX);
+  if(!text && !chatMedia(m)) return; // nothing left to say — that's what unsend is for
+  endChatEdit();
+  if(text === chatText(m)) return;
+  const before = { text: m.text, editedAt: m.editedAt };
+  const editedAt = Date.now();
+  m.text = text;
+  m.editedAt = editedAt;
+  renderChat();
+  db.collection('messages').doc(id).update({ text, editedAt }).catch(e=>{
+    m.text = before.text;
+    m.editedAt = before.editedAt;
+    renderChat();
+    onSyncError(e);
+  });
+}
+async function copyChatText(text){
+  try{
+    await navigator.clipboard.writeText(text);
+    showToast('copied');
+    return;
+  } catch(e){ /* older browsers / no permission: fall back to a hidden textarea */ }
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+  document.body.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try{ ok = document.execCommand('copy'); } catch(e){}
+  ta.remove();
+  showToast(ok ? 'copied' : "couldn't copy that");
+}
+
+// --- reactions (one per person; choosing your current one again takes it back) ---
+function toggleChatReaction(id, emoji){
+  const m = findMessage(id);
+  if(!m || !myCharacter || !CHAT_REACTIONS.includes(emoji)) return;
+  const me = myCharacter;
+  const next = chatReactions(m)[me] === emoji ? null : emoji;
+  const before = m.reactions;
+  const r = Object.assign({}, chatReactions(m));
+  if(next) r[me] = next; else delete r[me];
+  m.reactions = r;
+  renderChat();
+  db.collection('messages').doc(id).update({
+    ['reactions.' + me]: next ? next : firebase.firestore.FieldValue.delete()
+  }).catch(e=>{
+    m.reactions = before;
+    renderChat();
+    onSyncError(e);
+  });
+}
+function doubleTapHeart(id){
+  const m = findMessage(id);
+  if(!m) return;
+  const adding = chatReactions(m)[myCharacter] !== '❤️';
+  toggleChatReaction(id, '❤️');
+  if(!adding) return;
+  const stack = chatRowEl(id) && chatRowEl(id).querySelector('.chat-stack');
+  if(!stack) return;
+  const b = document.createElement('span');
+  b.className = 'chat-burst';
+  b.textContent = '❤️';
+  stack.appendChild(b);
+  setTimeout(()=> b.remove(), 800);
+}
+
+// --- the action bar (long-press on touch, ··· on hover) ---
+function openChatMenu(id){
+  const m = findMessage(id);
+  const row = chatRowEl(id);
+  if(!m || !row) return;
+  closeChatPanel();
+  cancelChatDelete();
+  const scroller = document.getElementById('chatScroll');
+  chatActionId = id;
+  chatActionScroll = scroller.scrollTop;
+  document.querySelectorAll('#chatList .chat-row.menu-on').forEach(r=> r.classList.remove('menu-on'));
+  row.classList.add('menu-on');
+  const mine = m.from === myCharacter;
+  const myR = chatReactions(m)[myCharacter];
+  const text = chatText(m);
+  let acts = `<button type="button" data-menu="reply">reply</button>`;
+  if(text) acts += `<button type="button" data-menu="copy">copy</button>`;
+  if(mine && (text || chatKind(m) === 'image')) acts += `<button type="button" data-menu="edit">edit</button>`;
+  if(mine) acts += `<button type="button" class="danger" data-menu="unsend">unsend</button>`;
+  const menu = document.getElementById('chatMenu');
+  menu.innerHTML = `<div class="chat-menu-reacts">${CHAT_REACTIONS.map(e =>
+      `<button type="button" data-react="${e}" class="${myR === e ? 'on' : ''}" aria-label="${myR === e ? 'Remove reaction' : 'React with ' + e}">${e}</button>`
+    ).join('')}</div><div class="chat-menu-acts">${acts}</div>`;
+  // above the message if there's room, otherwise below; lined up with its side, kept on screen
+  menu.style.left = '0px';
+  menu.style.top = '0px';
+  menu.classList.add('open');
+  const wr = document.getElementById('chatWrap').getBoundingClientRect();
+  const sr = row.querySelector('.chat-stack').getBoundingClientRect();
+  const cr = scroller.getBoundingClientRect();
+  const mw = menu.offsetWidth, mh = menu.offsetHeight;
+  let top = sr.top - mh - 8;
+  if(top < cr.top + 4) top = sr.bottom + 10;
+  top = Math.max(cr.top + 4, Math.min(top, cr.bottom - mh - 4));
+  let left = mine ? sr.right - mw : sr.left;
+  left = Math.max(wr.left + 8, Math.min(left, wr.right - mw - 8));
+  menu.style.left = Math.round(left - wr.left) + 'px';
+  menu.style.top = Math.round(top - wr.top) + 'px';
+  if(!touchUI()){
+    const first = menu.querySelector('button');
+    if(first) first.focus({ preventScroll:true });
+  }
+}
+function closeChatMenu(){
+  if(!chatActionId) return;
+  chatActionId = null;
+  const menu = document.getElementById('chatMenu');
+  menu.classList.remove('open');
+  menu.innerHTML = '';
+  document.querySelectorAll('#chatList .chat-row.menu-on').forEach(r=> r.classList.remove('menu-on'));
+}
+function onChatMenuClick(e){
+  const id = chatActionId;
+  if(!id) return;
+  const r = e.target.closest('[data-react]');
+  if(r){ closeChatMenu(); toggleChatReaction(id, r.dataset.react); return; }
+  const a = e.target.closest('[data-menu]');
+  if(!a) return;
+  const m = findMessage(id);
+  closeChatMenu();
+  if(!m) return;
+  const act = a.dataset.menu;
+  if(act === 'reply') beginChatReply(id);
+  else if(act === 'copy') copyChatText(chatText(m));
+  else if(act === 'edit') beginChatEdit(id);
+  else if(act === 'unsend') beginChatDelete(id);
+}
+
+// --- touch & mouse on the list: tap (time / photo), double-tap (❤️), long-press (actions), swipe right (reply) ---
+function setupChatGestures(scroller){
+  let g = null, tapTimer = null, lastTap = null;
+  const reset = ()=>{ if(g) clearTimeout(g.timer); g = null; };
+  scroller.addEventListener('pointerdown', e=>{
+    if(e.pointerType === 'mouse' && e.button !== 0) return;
+    // a quote is part of its bubble for long-press and swipe; its tap (jump to the original) is a click
+    if(e.target.closest('button:not(.chat-quote), a')) return;
+    if(chatDismissPointer === e.pointerId){ chatDismissPointer = null; reset(); return; }
+    const stack = e.target.closest('.chat-stack');
+    const row = stack && stack.closest('.chat-row[data-id]');
+    if(!row) return;
+    reset();
+    const cur = { id: row.dataset.id, x: e.clientX, y: e.clientY, touch: e.pointerType !== 'mouse',
+      onMedia: !!e.target.closest('.chat-media'), onQuote: !!e.target.closest('.chat-quote'),
+      moved:false, long:false, swipe:null, timer:null };
+    if(cur.touch){
+      cur.timer = setTimeout(()=>{
+        if(g !== cur || cur.moved) return;
+        cur.long = true;
+        haptic();
+        openChatMenu(cur.id);
+      }, CHAT_LONG_PRESS_MS);
+    }
+    g = cur;
+  });
+  scroller.addEventListener('pointermove', e=>{
+    if(!g) return;
+    const dx = e.clientX - g.x, dy = e.clientY - g.y;
+    if(!g.moved && Math.hypot(dx, dy) > 8){ g.moved = true; clearTimeout(g.timer); }
+    if(!g.touch || g.long) return;
+    // only a clearly sideways drag becomes a swipe; anything vertical is left to the scroll
+    if(!g.swipe && g.moved && dx > 10 && Math.abs(dx) > Math.abs(dy) * 1.5) g.swipe = startChatSwipe(g.id);
+    if(g.swipe) moveChatSwipe(g.swipe, dx);
+  });
+  scroller.addEventListener('pointerup', ()=>{
+    if(!g) return;
+    const cur = g;
+    reset();
+    if(cur.swipe){ endChatSwipe(cur.swipe, true); return; }
+    if(cur.long) chatLongPressAt = Date.now();
+    if(cur.moved || cur.long || cur.onQuote) return;
+    const now = Date.now();
+    if(lastTap && lastTap.id === cur.id && now - lastTap.t < CHAT_DOUBLE_TAP_MS && Math.hypot(cur.x - lastTap.x, cur.y - lastTap.y) < 30){
+      clearTimeout(tapTimer);
+      lastTap = null;
+      doubleTapHeart(cur.id);
+      return;
+    }
+    lastTap = { id: cur.id, t: now, x: cur.x, y: cur.y };
+    clearTimeout(tapTimer);
+    // a single tap waits out the double-tap window before doing anything
+    tapTimer = setTimeout(()=>{
+      lastTap = null;
+      if(cur.onMedia) openChatLightbox(cur.id); else toggleChatTime(cur.id);
+    }, CHAT_DOUBLE_TAP_MS);
+  });
+  scroller.addEventListener('pointercancel', ()=>{
+    if(g && g.swipe) endChatSwipe(g.swipe, false);
+    reset();
+  });
+  // double-click is a reaction, not a word selection
+  scroller.addEventListener('mousedown', e=>{ if(e.detail > 1 && e.target.closest('.chat-stack')) e.preventDefault(); });
+  scroller.addEventListener('contextmenu', e=>{
+    if(e.target.closest('.chat-stack') && touchUI()) e.preventDefault();
+  });
+}
+function startChatSwipe(id){
+  const row = chatRowEl(id);
+  const stack = row && row.querySelector('.chat-stack');
+  if(!stack) return null;
+  const hint = document.createElement('span');
+  hint.className = 'chat-swipe-hint';
+  hint.innerHTML = REPLY_ICON;
+  stack.appendChild(hint);
+  stack.style.transition = 'none';
+  return { id, stack, hint, armed:false };
+}
+function moveChatSwipe(s, dx){
+  // follows the finger up to the threshold, then gives a little resistance
+  const t = dx <= CHAT_SWIPE_PX ? dx : CHAT_SWIPE_PX + (dx - CHAT_SWIPE_PX) * 0.25;
+  const tx = Math.max(0, Math.min(t, CHAT_SWIPE_PX + 24));
+  s.stack.style.transform = `translateX(${tx}px)`;
+  s.hint.style.opacity = String(Math.min(1, tx / CHAT_SWIPE_PX));
+  const armed = dx >= CHAT_SWIPE_PX;
+  if(armed !== s.armed){
+    s.armed = armed;
+    s.hint.classList.toggle('armed', armed);
+    if(armed) haptic();
+  }
+}
+function endChatSwipe(s, commit){
+  s.stack.style.transition = 'transform .22s cubic-bezier(.2,.8,.3,1)';
+  s.stack.style.transform = '';
+  s.hint.style.transition = 'opacity .15s ease';
+  s.hint.style.opacity = '0';
+  setTimeout(()=>{ s.hint.remove(); s.stack.style.transition = ''; }, 240);
+  if(commit && s.armed) beginChatReply(s.id);
+}
+
+function onChatEscape(e){
+  if(e.key !== 'Escape' || e.isComposing) return;
+  if(closeChatLightbox()) return;
+  if(notifySheetOpen()){ closeNotifySheet(); return; }
+  if(!chatTabActive()) return;
+  if(chatActionId){ closeChatMenu(); return; }
+  if(document.getElementById('chatPanel').classList.contains('open')){ closeChatPanel(); document.getElementById('chatInput').focus({ preventScroll:true }); return; }
+  if(chatConfirmId){ cancelChatDelete(); return; }
+  if(chatEditId){ endChatEdit(); return; }
+  if(chatReply){ chatReply = null; renderChatTray(); }
+}
+
+// --- emoji (built in) and GIFs (GIPHY, only when CONFIG.GIPHY_KEY is set) ---
+const CHAT_EMOJI = [
+  ['smileys', '😊', '😀 😄 😁 😆 😂 🤣 🙂 🙃 😉 😊 😌 😏 😋 😜 🤪 😎 🤗 🤭 🤔 😳 🥺 😴 😭 😤'],
+  ['love', '❤️', '❤️ 🧡 💛 💚 💙 💜 🤍 🖤 💕 💞 💓 💗 💖 💘 💝 💟 ❣️ 💌 💋 😘 😍 🥰 🌹 💐'],
+  ['gestures', '👋', '👋 ✋ 👌 ✌️ 🤞 🤟 🤘 🤙 👈 👉 👆 👇 ☝️ 👍 👎 👊 ✊ 👏 🙌 👐 🤲 🙏 💪 🤝'],
+  ['animals', '🐶', '🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🐔 🐧 🐦 🐤 🦄 🐝 🦋 🐢 🐙'],
+  ['food', '🍓', '🍓 🍒 🍑 🍉 🍋 🍌 🥭 🍍 🥑 🍕 🍔 🍟 🌮 🍜 🍣 🥟 🍦 🍩 🍪 🎂 🍫 🧋 ☕ 🍵'],
+  ['activities', '⚽', '⚽ 🏀 🎾 🏓 🏸 🎮 🎲 🎯 🎳 🎨 🎬 🎤 🎧 🎵 🎹 🎸 📚 ✏️ 🏃 🧘 🏊 🚴 🎉 🎁'],
+  ['travel', '✈️', '✈️ 🚗 🚕 🚌 🚇 🚲 🛵 🚢 🏖️ 🏝️ ⛰️ 🗻 🏙️ 🌃 🌉 🎡 🗼 🏠 🌍 🧳 🌅 🌙 ⭐ ☀️'],
+  ['symbols', '✨', '✨ 🌟 💫 🔥 🌈 ☁️ 🌸 🌷 🌼 🍀 🎀 🎶 💭 💬 💤 💯 ✅ ❌ ❓ ❗ ♾️ 🔔 📍 ⏰']
+].map(([name, icon, list]) => ({ name, icon, list: list.split(' ') }));
+const RECENT_EMOJI_KEY = 'chatRecentEmoji';
+let chatPanelMode = 'emoji';
+let gifSeq = 0, gifResults = [], gifSearchTimer = null;
+
+function recentEmoji(){
+  try{
+    const v = JSON.parse(localStorage.getItem(RECENT_EMOJI_KEY) || '[]');
+    return Array.isArray(v) ? v.filter(x => typeof x === 'string' && x && x.length <= 16).slice(0, 8) : [];
+  } catch(e){ return []; }
+}
+function rememberEmoji(em){
+  try{
+    localStorage.setItem(RECENT_EMOJI_KEY, JSON.stringify([em, ...recentEmoji().filter(x => x !== em)].slice(0, 8)));
+  } catch(e){ /* private mode etc. — recents just won't stick */ }
+}
+function toggleChatPanel(){
+  if(document.getElementById('chatPanel').classList.contains('open')) closeChatPanel();
+  else openChatPanel();
+}
+function openChatPanel(){
+  closeChatMenu();
+  const panel = document.getElementById('chatPanel');
+  renderChatPanel(); // rebuilt each time so "recent" is fresh
+  const room = document.getElementById('chatScroll').clientHeight + document.querySelector('.chat-head').offsetHeight - 12;
+  panel.style.height = Math.max(200, Math.min(312, room)) + 'px';
+  panel.classList.add('open');
+  document.getElementById('chatEmojiBtn').setAttribute('aria-expanded', 'true');
+  // on a phone the panel takes the keyboard's place
+  if(touchUI()) document.getElementById('chatInput').blur();
+}
+function closeChatPanel(){
+  const panel = document.getElementById('chatPanel');
+  if(!panel || !panel.classList.contains('open')) return;
+  panel.classList.remove('open');
+  document.getElementById('chatEmojiBtn').setAttribute('aria-expanded', 'false');
+  clearTimeout(gifSearchTimer);
+}
+function renderChatPanel(){
+  const panel = document.getElementById('chatPanel');
+  const recent = recentEmoji();
+  const tabs = (recent.length ? [{ name:'recent', icon:'🕘' }] : []).concat(CHAT_EMOJI);
+  panel.innerHTML = `<div class="chat-panel-tabs">${tabs.map(t =>
+      `<button type="button" data-cat="${t.name}" title="${t.name}" aria-label="${t.name}">${t.icon}</button>`).join('')}${
+      CONFIG.GIPHY_KEY ? `<button type="button" class="gif-tab" data-cat="gif" title="GIFs" aria-label="GIFs">GIF</button>` : ''}</div>
+    <div class="chat-panel-body" id="chatPanelBody"></div>`;
+  if(!CONFIG.GIPHY_KEY) chatPanelMode = 'emoji';
+  renderChatPanelBody();
+  document.getElementById('chatPanelBody').addEventListener('scroll', syncEmojiTab, { passive:true });
+}
+function renderChatPanelBody(){
+  const body = document.getElementById('chatPanelBody');
+  if(chatPanelMode === 'gif'){
+    body.innerHTML = `<input type="search" class="chat-gif-search" id="chatGifSearch" placeholder="Search GIPHY" enterkeyhint="search" autocomplete="off" aria-label="Search GIFs">
+      <div class="chat-gif-grid" id="chatGifGrid"></div>
+      <div class="chat-gif-credit">Powered by GIPHY</div>`;
+    const q = document.getElementById('chatGifSearch');
+    q.addEventListener('input', ()=>{
+      clearTimeout(gifSearchTimer);
+      gifSearchTimer = setTimeout(()=> loadGifs(q.value.trim()), 350);
+    });
+    q.addEventListener('keydown', e=>{ if(e.key === 'Enter'){ e.preventDefault(); clearTimeout(gifSearchTimer); loadGifs(q.value.trim()); q.blur(); } });
+    loadGifs('');
+  } else {
+    const recent = recentEmoji();
+    const sections = (recent.length ? [{ name:'recent', list: recent }] : []).concat(CHAT_EMOJI);
+    body.innerHTML = sections.map(s =>
+      `<div class="chat-emo-label" data-sec="${s.name}">${s.name}</div><div class="chat-emo-grid">${
+        s.list.map(e => `<button type="button" data-emoji="${escapeHtml(e)}" aria-label="${escapeHtml(e)}">${escapeHtml(e)}</button>`).join('')}</div>`
+    ).join('');
+  }
+  setChatPanelTab(chatPanelMode === 'gif' ? 'gif' : (recentEmoji().length ? 'recent' : CHAT_EMOJI[0].name));
+}
+function setChatPanelTab(name){
+  document.querySelectorAll('#chatPanel .chat-panel-tabs button').forEach(b=> b.classList.toggle('active', b.dataset.cat === name));
+}
+function syncEmojiTab(){
+  if(chatPanelMode !== 'emoji') return;
+  const body = document.getElementById('chatPanelBody');
+  let current = null;
+  body.querySelectorAll('.chat-emo-label').forEach(l=>{ if(l.offsetTop - body.scrollTop <= 24) current = l.dataset.sec; });
+  if(current) setChatPanelTab(current);
+}
+function onChatPanelClick(e){
+  const tab = e.target.closest('[data-cat]');
+  if(tab){
+    const cat = tab.dataset.cat;
+    if(cat === 'gif'){
+      if(chatPanelMode !== 'gif'){ chatPanelMode = 'gif'; renderChatPanelBody(); }
+      if(!touchUI()) document.getElementById('chatGifSearch').focus();
+      return;
+    }
+    if(chatPanelMode !== 'emoji'){ chatPanelMode = 'emoji'; renderChatPanelBody(); }
+    const body = document.getElementById('chatPanelBody');
+    const label = body.querySelector(`.chat-emo-label[data-sec="${cat}"]`);
+    if(label) body.scrollTop = label.offsetTop - 2;
+    setChatPanelTab(cat);
+    return;
+  }
+  const em = e.target.closest('[data-emoji]');
+  if(em){
+    insertChatText(em.dataset.emoji);
+    rememberEmoji(em.dataset.emoji);
+    return;
+  }
+  const gif = e.target.closest('[data-gif]');
+  if(gif){
+    const g = gifResults[Number(gif.dataset.gif)];
+    if(g) sendChatGif(g);
+  }
+}
+// Inserts at the caret — the live one if the composer is focused, otherwise the last one we saw
+// (on a phone the panel replaces the keyboard, so the composer usually isn't focused).
+function insertChatText(s){
+  const input = document.getElementById('chatInput');
+  const v = input.value;
+  const focused = document.activeElement === input;
+  let start = focused ? input.selectionStart : (chatCaret ? chatCaret.s : v.length);
+  let end = focused ? input.selectionEnd : (chatCaret ? chatCaret.e : v.length);
+  start = Math.max(0, Math.min(start == null ? v.length : start, v.length));
+  end = Math.max(start, Math.min(end == null ? start : end, v.length));
+  if(v.length - (end - start) + s.length > CHAT_MAX) return;
+  input.value = v.slice(0, start) + s + v.slice(end);
+  const pos = start + s.length;
+  chatCaret = { s: pos, e: pos };
+  if(!touchUI()) input.focus({ preventScroll:true });
+  if(document.activeElement === input){ try{ input.setSelectionRange(pos, pos); } catch(e){} }
   autosizeChatInput();
   updateChatComposerState();
-  stopMyTyping();
-  scrollChatToBottom(); // my own message always comes into view
-  db.collection('messages').add({
-    from: myCharacter,
-    to: otherCharacterKey(),
-    text,
-    createdAt: Date.now(),
-    readAt: null
+  noteMyTyping();
+}
+function giphyUrl(q){
+  const p = new URLSearchParams({ api_key: CONFIG.GIPHY_KEY, limit: '24', rating: 'pg-13' });
+  if(q) p.set('q', q);
+  return 'https://api.giphy.com/v1/gifs/' + (q ? 'search' : 'trending') + '?' + p.toString();
+}
+function loadGifs(q){
+  const grid = document.getElementById('chatGifGrid');
+  if(!grid || !CONFIG.GIPHY_KEY) return;
+  const seq = ++gifSeq;
+  grid.innerHTML = `<div class="chat-gif-note" style="grid-column:1/-1">loading…</div>`;
+  fetch(giphyUrl(q)).then(r => r.ok ? r.json() : Promise.reject(new Error('GIPHY ' + r.status))).then(json=>{
+    if(seq !== gifSeq) return;
+    gifResults = (json && Array.isArray(json.data) ? json.data : []).map(item=>{
+      const im = (item && item.images) || {};
+      const full = im.fixed_width, small = im.fixed_width_small || im.fixed_width;
+      const url = full && safeGifUrl(full.url), prev = small && safeGifUrl(small.url);
+      if(!url || !prev) return null;
+      return { url, prev, w: parseInt(full.width, 10) || 200, h: parseInt(full.height, 10) || 150, title: String(item.title || 'gif').slice(0, 80) };
+    }).filter(Boolean);
+    const g2 = document.getElementById('chatGifGrid');
+    if(!g2) return;
+    g2.innerHTML = gifResults.length
+      ? gifResults.map((g, i) => `<button type="button" data-gif="${i}" aria-label="${escapeHtml(g.title)}"><img src="${escapeHtml(g.prev)}" alt="" loading="lazy" draggable="false"></button>`).join('')
+      : `<div class="chat-gif-note" style="grid-column:1/-1">nothing for that one</div>`;
   }).catch(e=>{
+    if(seq !== gifSeq) return;
+    console.warn('GIF search failed:', e);
+    const g2 = document.getElementById('chatGifGrid');
+    if(g2) g2.innerHTML = `<div class="chat-gif-note" style="grid-column:1/-1">couldn’t reach GIPHY</div>`;
+  });
+}
+// A GIF is just a URL on the message (no chatImages doc). It goes straight away, like a sticker;
+// anything typed in the composer stays there.
+function sendChatGif(g){
+  if(!myCharacter) return;
+  if(chatEditId){ showToast('finish editing first'); return; }
+  const url = safeGifUrl(g.url);
+  if(!url) return;
+  const reply = chatReply;
+  const msg = { from: myCharacter, to: otherCharacterKey(), text: '', createdAt: Date.now(), readAt: null,
+    gif: { url, w: g.w, h: g.h } };
+  if(reply) msg.replyTo = reply;
+  chatReply = null;
+  renderChatTray();
+  closeChatPanel();
+  scrollChatToBottom();
+  db.collection('messages').add(msg).catch(e=>{
     onSyncError(e);
-    // hand it back rather than lose it, unless they've already started typing something else
-    if(!input.value){ input.value = text; autosizeChatInput(); updateChatComposerState(); }
+    if(reply && !chatReply && !chatEditId){ chatReply = reply; renderChatTray(); }
   });
 }
 
@@ -4292,24 +5574,30 @@ function updateChatIndicators(){
 
 function announceMessage(m, n){
   const name = characterLabel(m.from);
+  const text = chatPreview(chatText(m), 60);
   if(!chatTabActive() && !document.hidden){
-    showToast(n > 1 ? `${n} new messages from ${name}` : `${name}: ${chatPreview(m.text, 60)}`);
+    showToast(n > 1 ? `${n} new messages from ${name}` : (text ? `${name}: ${text}` : `${name} ${chatSummary(m)}`));
   }
-  try{
-    // same permission the letters inbox asks for — one switch covers both
-    if(document.hidden && 'Notification' in window && Notification.permission === 'granted'){
-      new Notification(name, {
-        body: n > 1 ? `${n} new messages` : chatPreview(m.text, 120),
-        tag: 'chat' // a burst replaces itself instead of stacking up
-      });
-    }
-  } catch(e){ console.warn('notification failed:', e); }
+  // same permission the letters inbox asks for — one switch covers both
+  if(document.hidden){
+    showSystemNotification(name, {
+      body: n > 1 ? `${n} new messages` : (chatPreview(chatText(m), 120) || chatSummary(m)),
+      tag: 'chat' // a burst replaces itself instead of stacking up
+    });
+  }
+}
+// Reactions and edits change an existing message, so they never touch the unread count.
+function announceReaction(emoji){
+  const name = characterLabel(otherCharacterKey());
+  if(!chatTabActive() && !document.hidden) showToast(`${name} reacted ${emoji} to your message`);
+  if(document.hidden) showSystemNotification(name, { body: `reacted ${emoji} to your message`, tag: 'chat' });
 }
 
-// --- deleting (your own messages only) ---
+// --- unsending (your own messages only) ---
 function beginChatDelete(id){
-  const m = messages.find(x => x.id === id);
+  const m = findMessage(id);
   if(!m || m.from !== myCharacter) return;
+  closeChatMenu();
   chatConfirmId = id;
   chatConfirmAt = Date.now();
   renderChat();
@@ -4322,33 +5610,20 @@ function cancelChatDelete(){
   renderChat();
 }
 function deleteChatMessage(id){
-  const m = messages.find(x => x.id === id);
+  const m = findMessage(id);
   chatConfirmId = null;
   if(!m || m.from !== myCharacter){ renderChat(); return; }
+  if(chatEditId === id) endChatEdit();
   messages = messages.filter(x => x.id !== id); // gone locally right away
   renderChat();
   updateChatIndicators();
-  db.collection('messages').doc(id).delete().catch(onSyncError);
-}
-function setupChatLongPress(scroller){
-  let timer = null, start = null;
-  const cancel = ()=>{ clearTimeout(timer); timer = null; };
-  scroller.addEventListener('pointerdown', e=>{
-    if(e.pointerType !== 'touch') return;
-    const bubble = e.target.closest('.chat-row.mine .bubble');
-    if(!bubble) return;
-    const id = bubble.parentElement.dataset.id;
-    start = { x: e.clientX, y: e.clientY };
-    cancel();
-    timer = setTimeout(()=>{ timer = null; beginChatDelete(id); }, 500);
-  });
-  scroller.addEventListener('pointermove', e=>{
-    if(timer && start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 8) cancel();
-  });
-  ['pointerup', 'pointercancel', 'pointerleave'].forEach(t=> scroller.addEventListener(t, cancel));
-  scroller.addEventListener('contextmenu', e=>{
-    if(e.target.closest('.chat-row.mine .bubble') && window.matchMedia('(hover: none)').matches) e.preventDefault();
-  });
+  const md = chatMedia(m);
+  db.collection('messages').doc(id).delete().then(()=>{
+    // the photo goes with it (a reply's quote of it is text-only, so nothing else needs it)
+    if(md && md.kind === 'image'){
+      return db.collection('chatImages').doc(md.id).delete().catch(e=> console.warn('chat photo cleanup failed:', e));
+    }
+  }).catch(onSyncError);
 }
 
 // --- typing indicator ---
@@ -4385,6 +5660,7 @@ function noteTyping(id, d){
     partnerTyping[id] = { typingAt: d.typingAt, seenAt: Date.now() };
   }
   updateTypingIndicator();
+  notePartnerChat(id, d);
 }
 function updateTypingIndicator(){
   const el = document.getElementById('chatTyping');
@@ -4397,6 +5673,129 @@ function updateTypingIndicator(){
   el.classList.toggle('show', show);
   clearTimeout(typingHideTimer);
   if(show) typingHideTimer = setTimeout(updateTypingIndicator, remaining + 50);
+}
+
+// --- "is the chat open right now" (the "here now" line in the chat header) ---
+// Like typing, freshness is judged by when *we* saw chatOpenAt change, not by comparing clocks;
+// the 2-minute sanity check only throws out a leftover doc from an old session.
+function writeChatOpen(open){
+  if(!myCharacter) return;
+  chatOpenWritten = open;
+  db.collection('liveState').doc(clientId)
+    .set({ character: myCharacter, chatOpen: open, chatOpenAt: Date.now() }, { merge:true })
+    .catch(e=> console.warn('chat presence write failed:', e));
+}
+function updateMyChatOpen(){
+  const open = isChatOpen();
+  if(open !== chatOpenWritten) writeChatOpen(open);
+}
+function notePartnerChat(id, d){
+  if(!d || d.character !== otherCharacterKey() || d.chatOpen !== true || !(Date.now() - (Number(d.chatOpenAt) || 0) < 120000)){
+    delete partnerChat[id];
+  } else if(!partnerChat[id] || partnerChat[id].at !== d.chatOpenAt){
+    partnerChat[id] = { at: d.chatOpenAt, seenAt: Date.now() };
+  }
+  updateChatHead();
+}
+function partnerInChat(){
+  const now = Date.now();
+  return Object.values(partnerChat).some(p => now - p.seenAt < CHAT_OPEN_FRESH_MS);
+}
+function updateChatHead(){
+  const el = document.getElementById('chatHeadStatus');
+  if(el) el.textContent = partnerInChat() ? 'here now' : '';
+}
+
+// ---------- Notifications ----------
+// Two layers: the in-app toast/badge/title (above), and system notifications while the page is
+// open in the background (via the service worker when there is one — Android Chrome refuses
+// `new Notification` there, and iOS only allows them for a home-screen app).
+function showSystemNotification(title, opts){
+  try{
+    if(!('Notification' in window) || Notification.permission !== 'granted') return;
+    const o = Object.assign({ icon: 'icon-192.png' }, opts);
+    if(swRegistration && swRegistration.showNotification){
+      swRegistration.showNotification(title, o).catch(e=>{
+        console.warn('service worker notification failed:', e);
+        try{ new Notification(title, o); } catch(err){ console.warn('notification failed:', err); }
+      });
+      return;
+    }
+    new Notification(title, o);
+  } catch(e){ console.warn('notification failed:', e); }
+}
+
+function isIOS(){
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+function isStandalone(){
+  return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+}
+function isDesktop(){
+  return !isIOS() && !/Android/i.test(navigator.userAgent) && !touchUI();
+}
+function notifySheetOpen(){ const s = document.getElementById('notifySheet'); return !!s && s.classList.contains('open'); }
+function openNotifySheet(){
+  closeChatMenu();
+  closeChatPanel();
+  renderNotifySheet();
+  const s = document.getElementById('notifySheet');
+  s.classList.add('open');
+  s.setAttribute('aria-hidden', 'false');
+}
+function closeNotifySheet(){
+  const s = document.getElementById('notifySheet');
+  s.classList.remove('open');
+  s.setAttribute('aria-hidden', 'true');
+}
+function renderNotifySheet(){
+  const body = document.getElementById('notifySheetBody');
+  if(!body) return;
+  const homeScreen = isIOS() && !isStandalone();
+  let help;
+  if(homeScreen){
+    help = `<p class="quiet notify-help">On iPhone, add this site to your Home Screen (Share → Add to Home Screen) and open it from there to allow notifications.</p>`;
+  } else if(isDesktop()){
+    help = `<p class="quiet notify-help">Notifications appear while this site is open in a tab, even in the background. Pin the tab so it’s always there.`
+      + (/Macintosh|Mac OS X/.test(navigator.userAgent) ? ` If nothing shows up, allow your browser in System Settings → Notifications.` : '')
+      + `</p>`;
+  } else {
+    help = `<p class="quiet notify-help">Notifications appear while this site is open in the background.</p>`;
+  }
+
+  let device;
+  if(!('Notification' in window)){
+    device = homeScreen ? '' : `<p class="quiet">This browser can’t show notifications.</p>`;
+    if(!homeScreen) help = '';
+  } else if(Notification.permission === 'granted'){
+    device = `<div class="sheet-row"><span>On for letters and messages</span></div>`;
+  } else if(Notification.permission === 'denied'){
+    device = `<p class="quiet">Blocked for this site. You can allow notifications again in your browser’s site settings.</p>`;
+  } else {
+    device = `<div class="sheet-row"><span>Off</span><button type="button" class="sheet-btn ghost" data-ns="allow">Allow notifications</button></div><p class="quiet">One permission covers letters and messages.</p>`;
+  }
+
+  body.innerHTML = `<div class="sheet-section"><p class="sheet-label">This device</p>${device}${help}</div>`;
+}
+function setupNotifySheet(){
+  const sheet = document.getElementById('notifySheet');
+  document.getElementById('chatBellBtn').addEventListener('click', openNotifySheet);
+  document.getElementById('notifySheetClose').addEventListener('click', closeNotifySheet);
+  sheet.addEventListener('click', e=>{
+    if(e.target === sheet){ closeNotifySheet(); return; }
+    const b = e.target.closest('[data-ns]');
+    if(b && b.dataset.ns === 'allow') requestLetterNotifications();
+  });
+}
+
+// Service worker: makes the site installable (home screen) and gives notifications a reliable
+// route on Android and iOS. It deliberately caches nothing, so an update is live on the next load.
+let swRegistration = null;
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js')
+    .catch(e=> console.warn('service worker registration failed:', e));
+  // only once it's active can it show notifications
+  navigator.serviceWorker.ready.then(reg=>{ swRegistration = reg; });
 }
 
 // ---------- Backup export ----------
